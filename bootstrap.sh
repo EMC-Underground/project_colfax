@@ -4,16 +4,31 @@
 red=`tput setaf 1`
 green=`tput setaf 2`
 cyan=`tput setaf 6`
+magenta=`tput setaf 5`
 reset=`tput sgr0`
 check="\xE2\x9C\x94"
 cross="\xE2\x9C\x98"
 min_dv="18.09"
 min_dcv="1.24"
+min_vv="1.2.4"
+min_fv="5.5.1"
 
 function version { echo "$@" | gawk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'; }
 
 print_check() {
     printf "${green}${check}\n"
+}
+
+print_version() {
+    case $2 in
+        good)
+            printf "${green}${1}\n"
+            ;;
+        bad)
+            printf "${red}${1}"
+            exit 1
+            ;;
+    esac
 }
 
 print_cross() {
@@ -30,41 +45,54 @@ success() {
     fi
 }
 
-docker_checks() {
-    printf "${cyan}Checking For Docker.... "
-    which docker > /dev/null 2>&1
+success_version() {
+    if [ "$(version ${1})" -ge "$(version ${2})" ]
+    then
+        print_version $1 "good"
+    else
+        print_version $1 "bad"
+    fi
+}
 
+docker_checks() {
+    printf "${cyan}Checking docker version.... "
+    dv=`docker --version | awk -F'[, ]' '{print $3}'`
     if [ $? -eq 0 ]
     then
-        print_check
-        printf "${cyan}Checking Version 18.09.0 or greater.... "
-        dv=`docker --version | awk -F'[, ]' '{print $3}'`
-        if [ "$(version ${dv})" -ge "$(version ${min_dv})" ]
-        then
-            print_check
-        else
-            print_cross
-        fi
+        success_version $dv $min_dv
     else
         print_cross
     fi
 }
 
 docker_compose_checks() {
-    printf "${cyan}Checking for docker-compose.... "
-    which docker-compose > /dev/null 2>&1
-
+    printf "${cyan}Checking docker-compose version.... "
+    dcv=`docker-compose version | awk -F'[, ]' 'NR==1 {print $3}'`
     if [ $? -eq 0 ]
     then
-        print_check
-        printf "${cyan}Checking Version 1.24.0 or greater.... "
-        dcv=`docker-compose version | awk -F'[, ]' 'NR==1 {print $3}'`
-        if [ "$(version ${dcv})" -ge "$(version ${min_dcv})" ]
-        then
-            print_check
-        else
-            print_cross
-        fi
+        success_version $dcv $min_dcv
+    else
+        print_cross
+    fi
+}
+
+vault_checks() {
+    printf "${cyan}Checking vault cli version.... "
+    vv=`vault -v | awk '{print substr($2,2)}'`
+    if [ $? -eq 0 ]
+    then
+        success_version $vv $min_vv
+    else
+        print_cross
+    fi
+}
+
+fly_checks() {
+    printf "${cyan}Checking for fly cli version.... "
+    fv=`fly --version`
+    if [ $? -eq 0 ]
+    then
+        success_version $fv $min_fv
     else
         print_cross
     fi
@@ -151,12 +179,6 @@ vault_create_store() {
     success
 }
 
-vault_create_team_store() {
-    printf "${cyan}Creating vault openfaas secret store.... "
-    vault secrets enable -address=http://localhost:8200 -version=1 -path=concourse/openfaas kv > /dev/null 2>&1
-    success
-}
-
 vault_create_policy() {
     printf "${cyan}Create vault policy.... "
     echo 'path "concourse/*" {
@@ -186,10 +208,31 @@ build_docker_network() {
     success
 }
 
+how_many_servers() {
+    printf "${magenta}How many servers will you use: ${reset}"
+    local __resultvar=$1
+    read result
+    eval $__resultvar="'$result'"
+}
+
+capture_server_ips() {
+    printf "${magenta}Enter server IP addresses\n"
+    for ((i=0; i<$1; i++))
+    do
+        printf "${cyan}Server[${i}]: ${reset}"
+        read ip$i
+    done
+}
+
+
 if [[ $# -eq 0 ]]
 then
     docker_checks
     docker_compose_checks
+    fly_checks
+    vault_checks
+    how_many_servers num_servers
+    capture_server_ips $num_servers
     build_docker_network
     pull_vault_repo
     build_deploy_vault
@@ -199,7 +242,6 @@ then
     vault_unseal $unseal
     vault_login $roottoken
     vault_create_store
-    #vault_create_team_store
     vault_create_policy
     vault_create_token token
     pull_concourse_repo
