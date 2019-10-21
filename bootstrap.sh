@@ -10,7 +10,7 @@ check="\xE2\x9C\x94"
 cross="\xE2\x9C\x98"
 min_dv="18.09"
 min_dcv="1.24"
-min_vv="1.2.4"
+min_vv="1.2.3"
 min_fv="5.5.1"
 
 function version { echo "$@" | gawk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'; }
@@ -160,7 +160,7 @@ cleanup() {
 
 vault_init() {
     printf "${cyan}Initializing Vault.... "
-    sleep 5
+    sleep 3
     local  __resultvar=$1
     local result=`vault operator init -address=http://localhost:8200 -key-threshold=1 -key-shares=1 -format=json`
     success
@@ -202,37 +202,150 @@ vault_login() {
     success
 }
 
+create_vault_secret() {
+    printf "${cyan}Creating ${2} vault secret.... "
+    vault kv put -address=http://localhost:8200 $1$2 value=$3 > /dev/null 2>&1
+    success
+}
+
 build_docker_network() {
     printf "${cyan}Building docker bridge network.... "
     docker network create comms > /dev/null 2>&1
     success
 }
 
-how_many_servers() {
-    printf "${magenta}How many servers will you use: ${reset}"
+capture_num_servers() {
+    printf "${magenta}How many servers will you use (odd numbers only): ${reset}"
     local __resultvar=$1
-    read result
+    until [ $((result%2)) -ne 0 ]
+    do
+        read result
+    done
     eval $__resultvar="'$result'"
 }
 
 capture_server_ips() {
     printf "${magenta}Enter server IP addresses\n"
-    for ((i=0; i<$1; i++))
+    local __resultvar=$1
+    local i=0
+    while [[ $i -lt $2 ]]
     do
-        printf "${cyan}Server[${i}]: ${reset}"
+        printf "${magenta}Server[${i}]: ${reset}"
         read ip$i
+        eval p="\$ip${i}"
+        valid_ip $p
+        if [ $? -ne 0 ]
+        then
+            echo "${red}Please enter valid a IP Address"
+        else
+            servers[$i]=$p
+            ((i++))
+        fi
+    done
+    local result=$(join_by , "${servers[@]}")
+    eval $__resultvar="'$result'"
+}
+
+capture_username() {
+    local result=""
+    printf "${magenta}Enter username (root): ${reset}"
+    local __resultvar=$1
+    read result
+    if [ "$result" == "" ]; then result="root"; fi
+    eval $__resultvar="'$result'"
+}
+
+capture_password() {
+    local result=""
+    printf "${magenta}Enter password (Password#1): ${reset}"
+    local __resultvar=$1
+    read -s result
+    if [ "$result" == "" ]; then result="Password#1"; fi
+    echo ""
+    eval $__resultvar="'$result'"
+}
+
+function valid_ip() {
+    local  ip=$1
+    local  stat=1
+    if [[ $ip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+        OIFS=$IFS
+        IFS='.'
+        ip=($ip)
+        IFS=$OIFS
+        [[ ${ip[0]} -le 255 && ${ip[1]} -le 255 \
+            && ${ip[2]} -le 255 && ${ip[3]} -le 255 ]]
+        stat=$?
+    fi
+    return $stat
+}
+
+concourse_login() {
+    printf "${cyan}Logging in to concourse.... "
+    local i=0
+    local o=0
+    while [[ $i -lt 1 ]]
+    do
+        fly --target main login --concourse-url=http://localhost:8080 -u test -p test > /dev/null 2>&1
+        if [ $? -eq 0 ]
+        then
+            success
+            ((i++))
+        else
+            ((o++))
+            if [ $o -eq 5 ]
+            then
+                success
+                ((i++))
+            fi
+            sleep 2
+        fi
     done
 }
 
+set_swarm_pipeline() {
+    printf "${cyan}Creating yo damn shit!.... ${reset}"
+    fly --target main set-pipeline -p build -c pipeline.yml -n > /dev/null 2>&1
+    success
+    printf "${cyan}Unpausing yo damn shit!.... ${reset}"
+    fly --target main unpause-pipeline -p build > /dev/null 2>&1
+    success
+    printf "${cyan}Deploying yo damn shit!.... ${reset}"
+    fly --target main trigger-job --job=build/deploy-swarm > /dev/null 2>&1
+    success
+}
+
+capture_ntp_server() {
+    local result=""
+    printf "${magenta}Enter NTP Server (0.us.pool.ntp.org): ${reset}"
+    local __resultvar=$1
+    read result
+    if [ "$result" == "" ]; then result="0.us.pool.ntp.org"; fi
+    eval $__resultvar="'$result'"
+}
+
+function join_by { local IFS="$1"; shift; echo "$*"; }
+
+vault_create_policy() {
+    printf "${cyan}Create vault policy.... "
+    echo 'path "concourse/*" {
+  policy = "read"
+}' >> concourse-policy.hcl
+    vault policy write -address=http://localhost:8200 concourse ./concourse-policy.hcl > /dev/null 2>&1
+    success
+}
 
 if [[ $# -eq 0 ]]
 then
+    capture_num_servers num_servers
+    capture_server_ips server_list $num_servers
+    capture_username user_name
+    capture_password password
+    capture_ntp_server ntp_server
     docker_checks
     docker_compose_checks
     fly_checks
     vault_checks
-    how_many_servers num_servers
-    capture_server_ips $num_servers
     build_docker_network
     pull_vault_repo
     build_deploy_vault
@@ -248,8 +361,16 @@ then
     generate_keys
     export VAULT_CLIENT_TOKEN=$token
     deploy_concourse
-    echo "${cyan}Vault Concourse Key: ${green}${token}"
-    echo "${cyan}Vault Root Key: ${green}${roottoken}"
+    create_vault_secret "concourse/main/build/" "password" $password
+    create_vault_secret "concourse/main/build/" "user_name" $user_name
+    create_vault_secret "concourse/main/build/" "ntp_server" $ntp_server
+    create_vault_secret "concourse/main/build/" "server_list" $server_list
+    concourse_login
+    set_swarm_pipeline
+    echo "${cyan}Vault Concourse Key: ${green}${token}${reset}"
+    echo "${cyan}Vault Root Key: ${green}${roottoken}${reset}"
+    printf "${cyan}Here are your server(s): "
+    echo "${green}${server_list[*]}"
 fi
 
 case "$1" in
