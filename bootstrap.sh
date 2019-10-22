@@ -155,6 +155,7 @@ generate_keys() {
 
 deploy_concourse() {
     printf "${cyan}Deploying Concourse.... "
+    export DNS_URL=$server_list[0].xip.io
     case $kernel_version in
     4)
         export STORAGE_DRIVER=overlay
