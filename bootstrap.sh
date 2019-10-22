@@ -404,8 +404,8 @@ then
     set_swarm_pipeline
     echo "${cyan}Vault Concourse Key: ${green}${token}${reset}"
     echo "${cyan}Vault Root Key: ${green}${roottoken}${reset}"
-    printf "${cyan}Concourse URL: ${green}http://$DNS_URL:8080${reset}"
-    printf "${cyan}Vault URL: ${green}http://$DNS_URL:8200${reset}"
+    echo "${cyan}Concourse URL: ${green}http://$DNS_URL:8080${reset}"
+    echo "${cyan}Vault URL: ${green}http://$DNS_URL:8200${reset}"
     printf "${cyan}Here are your server(s): "
     echo "${green}${server_list[*]}"
 fi
