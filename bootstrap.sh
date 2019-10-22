@@ -197,8 +197,8 @@ vault_init() {
     local o=0
     while [[ $i -lt 1 ]]
     do
-        vault status -address=http://localhost:8200 > /dev/null 2>&1
-        if [ $? -eq 0 ]
+        vault operator init -address=http://localhost:8200 -status > /dev/null 2>&1
+        if [ $? -eq 2 ] || [ $? -eq 0 ]
         then
             ((i++))
         else
