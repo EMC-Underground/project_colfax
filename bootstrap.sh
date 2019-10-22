@@ -12,8 +12,18 @@ min_dv="18.09"
 min_dcv="1.24"
 min_vv="1.2.3"
 min_fv="5.5.1"
+min_jv="1.5"
 
 function version { echo "$@" | gawk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'; }
+
+check_kernel() {
+    printf "${cyan}Kernel Version... ${reset}"
+    local  __resultvar=$1
+    local result=`uname -r | awk -F- '{print $1}'`
+    printf "${green}${result}\n"
+    local maj_ver=`echo result | cut -d'.' -f1`
+    eval $__resultvar="'$maj_ver'"
+}
 
 print_check() {
     printf "${green}${check}\n"
@@ -87,6 +97,17 @@ vault_checks() {
     fi
 }
 
+jq_checks() {
+    printf "${cyan}Checking jq cli version.... "
+    jv=`jq --version | awk -F- '{print $NF}'`
+    if [ $? -eq 0 ]
+    then
+        success_version $jv $min_jv
+    else
+        print_cross
+    fi
+}
+
 fly_checks() {
     printf "${cyan}Checking for fly cli version.... "
     fv=`fly --version`
@@ -134,6 +155,16 @@ generate_keys() {
 
 deploy_concourse() {
     printf "${cyan}Deploying Concourse.... "
+    case $kernel_version in
+    4)
+        export STORAGE_DRIVER=overlay
+        ;;
+    3)
+        export STORAGE_DRIVER=btrfs
+        ;;
+    *)
+        print_cross;;
+    esac
     docker-compose up -d > /dev/null 2>&1
     success
     cd ../
@@ -228,6 +259,7 @@ capture_server_ips() {
     printf "${magenta}Enter server IP addresses\n"
     local __resultvar=$1
     local i=0
+    local servers=()
     while [[ $i -lt $2 ]]
     do
         printf "${magenta}Server[${i}]: ${reset}"
@@ -236,10 +268,10 @@ capture_server_ips() {
         valid_ip $p
         if [ $? -ne 0 ]
         then
-            echo "${red}Please enter valid a IP Address"
+            echo "${red}Please enter a valid IP Address"
         else
-            servers[$i]=$p
-            ((i++))
+            [[ " ${servers[@]} " =~ " ${p} " ]] && echo "${red}Please enter a unique IP Address"
+            [[ ! " ${servers[@]} " =~ " ${p} " ]] && servers[$i]=$p && ((i++)) && continue
         fi
     done
     local result=$(join_by , "${servers[@]}")
@@ -337,6 +369,7 @@ vault_create_policy() {
 
 if [[ $# -eq 0 ]]
 then
+    check_kernel kernel_version
     capture_num_servers num_servers
     capture_server_ips server_list $num_servers
     capture_username user_name
@@ -346,6 +379,7 @@ then
     docker_compose_checks
     fly_checks
     vault_checks
+    jq_checks
     build_docker_network
     pull_vault_repo
     build_deploy_vault
@@ -374,5 +408,10 @@ then
 fi
 
 case "$1" in
-    "destroy") cleanup
+    "destroy")
+        cleanup
+        ;;
+    *)
+        echo "${red}Did you mean ./bootstrap destroy?"
+        ;;
 esac
