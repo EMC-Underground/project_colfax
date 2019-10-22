@@ -26,23 +26,23 @@ check_kernel() {
 }
 
 print_check() {
-    printf "${green}${check}\n"
+    printf "${green}${check}\n${reset}"
 }
 
 print_version() {
     case $2 in
         good)
-            printf "${green}${1}\n"
+            printf "${green}${1}\n${reset}"
             ;;
         bad)
-            printf "${red}${1}"
+            printf "${red}${1}${reset}"
             exit 1
             ;;
     esac
 }
 
 print_cross() {
-    printf "${red}${cross}\n"
+    printf "${red}${cross}\n${reset}"
     exit 1
 }
 
@@ -412,6 +412,6 @@ case "$1" in
         cleanup
         ;;
     *)
-        echo "${red}Did you mean ./bootstrap destroy?"
+        echo "${red}Did you mean ./bootstrap destroy?${reset}"
         ;;
 esac
