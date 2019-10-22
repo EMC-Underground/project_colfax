@@ -155,7 +155,7 @@ generate_keys() {
 
 deploy_concourse() {
     printf "${cyan}Deploying Concourse.... "
-    export DNS_URL=`echo $server_list | cut -d',' -f 1`.xip.io
+    export DNS_URL=`echo $server_list | cut -d',' -f 1`
     case $kernel_version in
     4|5)
         export STORAGE_DRIVER=overlay
@@ -192,10 +192,26 @@ cleanup() {
 
 vault_init() {
     printf "${cyan}Initializing Vault.... "
-    sleep 3
     local  __resultvar=$1
-    local result=`vault operator init -address=http://localhost:8200 -key-threshold=1 -key-shares=1 -format=json`
-    success
+    local i=0
+    local o=0
+    while [[ $i -lt 1 ]]
+    do
+        local result=`vault operator init -address=http://localhost:8200 -key-threshold=1 -key-shares=1 -format=json`
+        if [ $? -eq 0 ]
+        then
+            success
+            ((i++))
+        else
+            if [ $o -eq 4 ]
+            then
+                success
+                ((i++))
+            fi
+            ((o++))
+            sleep 2
+        fi
+    done
     eval $__resultvar="'$result'"
 }
 
