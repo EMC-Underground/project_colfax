@@ -197,10 +197,9 @@ vault_init() {
     local o=0
     while [[ $i -lt 1 ]]
     do
-        vault status -address=http://localhost:8200
+        vault status -address=http://localhost:8200 > /dev/null 2>&1
         if [ $? -eq 0 ]
         then
-            success
             ((i++))
         else
             if [ $o -eq 4 ]
@@ -214,6 +213,7 @@ vault_init() {
         fi
     done
     local result=`vault operator init -address=http://localhost:8200 -key-threshold=1 -key-shares=1 -format=json > /dev/null 2>&1`
+    success
     eval $__resultvar="'$result'"
 }
 
