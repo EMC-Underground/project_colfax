@@ -157,7 +157,7 @@ deploy_concourse() {
     printf "${cyan}Deploying Concourse.... "
     export DNS_URL=$server_list[0].xip.io
     case $kernel_version in
-    4)
+    4|5)
         export STORAGE_DRIVER=overlay
         ;;
     3)
@@ -411,6 +411,9 @@ fi
 case "$1" in
     "destroy")
         cleanup
+        ;;
+    "")
+        echo "${green}FIN${reset}"
         ;;
     *)
         echo "${red}Did you mean ./bootstrap destroy?${reset}"
