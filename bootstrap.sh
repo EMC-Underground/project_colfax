@@ -21,7 +21,7 @@ check_kernel() {
     local  __resultvar=$1
     local result=`uname -r | awk -F- '{print $1}'`
     printf "${green}${result}\n"
-    local maj_ver=`echo result | cut -d'.' -f1`
+    local maj_ver=`echo $result | cut -d'.' -f1`
     eval $__resultvar="'$maj_ver'"
 }
 
