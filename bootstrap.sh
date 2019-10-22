@@ -197,19 +197,25 @@ vault_init() {
     local o=0
     while [[ $i -lt 1 ]]
     do
-        local result=`vault operator init -address=http://localhost:8200 -key-threshold=1 -key-shares=1 -format=json`
+        local result=`vault operator init -address=http://localhost:8200 -key-threshold=1 -key-shares=1 -format=json` > /dev/null 2>&1
+        echo "The exit code was ${?}"
         if [ $? -eq 0 ]
         then
+            echo "we think this worked"
             success
             ((i++))
         else
+            echo "we think it failed"
             if [ $o -eq 4 ]
             then
+                echo "we think we have timed out"
                 success
                 ((i++))
+            else
+                echo "we are trying to sleep and try again"
+                ((o++))
+                sleep 2
             fi
-            ((o++))
-            sleep 2
         fi
     done
     eval $__resultvar="'$result'"
