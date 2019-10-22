@@ -192,13 +192,12 @@ cleanup() {
 
 vault_init() {
     printf "${cyan}Initializing Vault.... "
-    sleep 3
     local  __resultvar=$1
     local i=0
     local o=0
     while [[ $i -lt 1 ]]
     do
-        local result=`vault operator init -address=http://localhost:8200 -key-threshold=1 -key-shares=1 -format=json > /dev/null 2>&1`
+        vault status -address=http://localhost:8200
         if [ $? -eq 0 ]
         then
             success
@@ -214,6 +213,7 @@ vault_init() {
             fi
         fi
     done
+    local result=`vault operator init -address=http://localhost:8200 -key-threshold=1 -key-shares=1 -format=json > /dev/null 2>&1`
     eval $__resultvar="'$result'"
 }
 
