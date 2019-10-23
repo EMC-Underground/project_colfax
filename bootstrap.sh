@@ -155,9 +155,9 @@ generate_keys() {
 
 deploy_concourse() {
     printf "${cyan}Deploying Concourse.... "
-    hostname=`hostname`
-    ip=`host ${hostname} | awk '{print $NF}'`
-    export DNS_URL=$ip.xip.io
+    ip=`ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p'`
+    #export DNS_URL=$ip.xip.io
+    export DNS_URL="localhost"
     case $kernel_version in
     4|5)
         export STORAGE_DRIVER=overlay
@@ -200,7 +200,7 @@ vault_init() {
     while [[ $i -lt 1 ]]
     do
         vault operator init -address=http://localhost:8200 -status > /dev/null 2>&1
-        if [ $? -eq 2 ] || [ $? -eq 0 ]
+        if [[ $? -eq 2 || $? -eq 0 ]]
         then
             ((i++))
         else
