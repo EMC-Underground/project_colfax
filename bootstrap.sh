@@ -156,8 +156,8 @@ generate_keys() {
 deploy_concourse() {
     printf "${cyan}Deploying Concourse.... "
     ip=`ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p'`
-    #export DNS_URL=$ip.xip.io
-    export DNS_URL="localhost"
+    export DNS_URL=$ip.xip.io
+    #export DNS_URL="localhost"
     case $kernel_version in
     4|5)
         export STORAGE_DRIVER=overlay
