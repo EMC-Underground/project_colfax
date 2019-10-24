@@ -119,32 +119,16 @@ fly_checks() {
     fi
 }
 
-pull_concourse_repo() {
-    printf "${cyan}Cloning Concourse Repo.... "
-    if [ ! -d "./concourse-docker" ]
+pull_repo() {
+    local repo_name=`echo $1 | awk -F'/' '{print $NF}' | awk -F'.' '{print $1}'`
+    printf "${cyan}Cloning ${repo_name} repo.... "
+    if [ ! -d "./${repo_name}" ]
     then
-        git clone https://github.com/EMC-Underground/concourse-docker.git > /dev/null 2>&1
-        success
-        cd ./concourse-docker
-    else
-        cd ./concourse-docker
-        git pull > /dev/null 2>&1
-        success
+        git clone $1 > /dev/null 2>&1
     fi
-}
-
-pull_vault_repo() {
-    printf "${cyan}Cloning Vault Repo.... "
-    if [ ! -d "./vault-consul-docker" ]
-    then
-        git clone https://github.com/EMC-Underground/vault-consul-docker.git > /dev/null 2>&1
-        success
-        cd ./vault-consul-docker
-    else
-        cd ./vault-consul-docker
-        git pull > /dev/null 2>&1
-        success
-    fi
+    cd ./$repo_name
+    git pull > /dev/null 2>&1
+    success
 }
 
 generate_keys() {
@@ -181,11 +165,8 @@ build_deploy_vault() {
 }
 
 cleanup() {
-    cd vault-consul-docker
-    docker-compose kill
-    cd ../concourse-docker
-    docker-compose kill
-    cd ..
+    [ -d "vault-consul-docker" ] && cd vault-consul-docker && docker-compose kill && cd ..
+    [ -d "concourse-docker" ] && cd concourse-docker && docker-compose kill && cd ..
     sudo rm -Rf vault-consul-docker
     sudo rm -Rf concourse-docker
     rm concourse-policy.hcl
@@ -334,6 +315,38 @@ function valid_ip() {
     return $stat
 }
 
+determine_os() {
+    if [ -f /etc/os-release ]; then
+        # freedesktop.org and systemd
+        . /etc/os-release
+        OS=$NAME
+        VER=$VERSION_ID
+    elif type lsb_release >/dev/null 2>&1; then
+        # linuxbase.org
+        OS=$(lsb_release -si)
+        VER=$(lsb_release -sr)
+    elif [ -f /etc/lsb-release ]; then
+        # For some versions of Debian/Ubuntu without lsb_release command
+        . /etc/lsb-release
+        OS=$DISTRIB_ID
+        VER=$DISTRIB_RELEASE
+    elif [ -f /etc/debian_version ]; then
+        # Older Debian/Ubuntu/etc.
+        OS=Debian
+        VER=$(cat /etc/debian_version)
+    elif [ -f /etc/SuSe-release ]; then
+        # Older SuSE/etc.
+        ...
+    elif [ -f /etc/redhat-release ]; then
+        # Older Red Hat, CentOS, etc.
+        ...
+    else
+        # Fall back to uname, e.g. "Linux <version>", also works for BSD, etc.
+        OS=$(uname -s)
+        VER=$(uname -r)
+    fi
+}
+
 concourse_login() {
     printf "${cyan}Logging in to concourse.... "
     local i=0
@@ -403,7 +416,7 @@ then
     vault_checks
     jq_checks
     build_docker_network
-    pull_vault_repo
+    pull_repo "https://github.com/EMC-Underground/vault-consul-docker.git"
     build_deploy_vault
     vault_init keys
     unseal=`echo $keys | jq -r .unseal_keys_b64[0]`
@@ -413,7 +426,7 @@ then
     vault_create_store
     vault_create_policy
     vault_create_token token
-    pull_concourse_repo
+    pull_repo "https://github.com/EMC-Underground/concourse-docker.git"
     generate_keys
     export VAULT_CLIENT_TOKEN=$token
     deploy_concourse
