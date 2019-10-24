@@ -190,6 +190,7 @@ cleanup() {
     sudo rm -Rf concourse-docker
     rm concourse-policy.hcl
     docker system prune -f
+    docker volume prune -f
 }
 
 vault_init() {
