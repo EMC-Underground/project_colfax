@@ -57,7 +57,6 @@ success() {
 }
 
 success_version() {
-    printf `version ${1}`
     if [ "$(version ${1})" -ge "$(version ${2})" ]
     then
         print_version $1 "good"
