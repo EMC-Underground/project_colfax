@@ -187,6 +187,7 @@ cleanup() {
     sudo rm -Rf vault-consul-docker
     sudo rm -Rf concourse-docker
     rm concourse-policy.hcl
+    rm pipeline.yml
     docker system prune -f
     docker volume prune -f
 }
@@ -240,7 +241,7 @@ vault_create_policy() {
 }
 
 build_pipeline() {
-    printf "{cyan}Creating pipeline definition.... ${reset}"
+    printf "${cyan}Creating pipeline definition.... ${reset}"
     echo '---
 resources:
   - name: swarm-repo
@@ -476,6 +477,7 @@ then
     create_vault_secret "concourse/main/build/" "user_name" $user_name
     create_vault_secret "concourse/main/build/" "ntp_server" $ntp_server
     create_vault_secret "concourse/main/build/" "server_list" $server_list
+    build_pipeline
     concourse_login
     set_swarm_pipeline
     echo "${cyan}Vault Concourse Key: ${green}${token}${reset}"
