@@ -239,6 +239,26 @@ vault_create_policy() {
     success
 }
 
+build_pipeline() {
+    printf "{cyan}Creating pipeline definition.... ${reset}"
+    echo '---
+resources:
+  - name: swarm-repo
+    type: git
+    source:
+      uri: https://github.com/EMC-Underground/ansible_install_dockerswarm
+      branch: master
+
+jobs:
+  - name: deploy-swarm
+    public: true
+    plan:
+      - get: swarm-repo
+      - task: ansible-playbook
+        file: swarm-repo/task/task.yml' >> pipeline.yml
+    success
+}
+
 vault_create_token() {
     printf "${cyan}Create vault service account.... "
     local __resultvar=$1
