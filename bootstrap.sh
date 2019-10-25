@@ -450,7 +450,7 @@ software_pre_reqs() {
 
 if [[ $# -eq 0 ]]
 then
-    software_pre_checks
+    software_pre_reqs
     check_kernel kernel_version
     capture_num_servers num_servers
     capture_server_ips server_list $num_servers
