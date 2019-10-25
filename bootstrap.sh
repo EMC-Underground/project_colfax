@@ -13,8 +13,9 @@ min_dcv="1.24"
 min_vv="1.2.3"
 min_fv="5.5.1"
 min_jv="1.5"
+min_gv="2.21"
 
-function version { echo "$@" | gawk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'; }
+function version { echo "$@" | awk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'; }
 
 check_kernel() {
     printf "${cyan}Kernel Version... ${reset}"
@@ -56,19 +57,20 @@ success() {
 }
 
 success_version() {
-    if [ "$(version ${1})" -ge "$(version ${2})" ]
+    if [ "$(version ${2})" -ge "$(version ${1})" ]
     then
-        print_version $1 "good"
+        print_version $2 "good"
     else
-        print_version $1 "bad"
+        print_version $2 "bad"
     fi
 }
 
 docker_checks() {
     printf "${cyan}Checking docker version.... "
-    dv=`docker --version | awk -F'[, ]' '{print $3}'`
+    command -v docker > /dev/null 2>&1
     if [ $? -eq 0 ]
     then
+        dv=`docker --version | awk -F'[, ]' '{print $3}'`
         success_version $dv $min_dv
     else
         print_cross
@@ -77,9 +79,10 @@ docker_checks() {
 
 docker_compose_checks() {
     printf "${cyan}Checking docker-compose version.... "
-    dcv=`docker-compose version | awk -F'[, ]' 'NR==1 {print $3}'`
+    command -v docker-compose > /dev/null 2>&1
     if [ $? -eq 0 ]
     then
+        dcv=`docker-compose version | awk -F'[, ]' 'NR==1 {print $3}'`
         success_version $dcv $min_dcv
     else
         print_cross
@@ -87,10 +90,11 @@ docker_compose_checks() {
 }
 
 vault_checks() {
-    printf "${cyan}Checking vault cli version.... "
-    vv=`vault -v | awk '{print substr($2,2)}'`
+    printf "${cyan}Checking vault version.... "
+    command -v vault > /dev/null 2>&1
     if [ $? -eq 0 ]
     then
+        vv=`vault -v | awk '{print substr($2,2)}'`
         success_version $vv $min_vv
     else
         print_cross
@@ -98,10 +102,11 @@ vault_checks() {
 }
 
 jq_checks() {
-    printf "${cyan}Checking jq cli version.... "
-    jv=`jq --version | awk -F- '{print $NF}'`
+    printf "${cyan}Checking jq version.... "
+    command -v jq > /dev/null 2>&1
     if [ $? -eq 0 ]
     then
+        jv=`jq --version | awk -F- '{print $2}'`
         success_version $jv $min_jv
     else
         print_cross
@@ -109,14 +114,21 @@ jq_checks() {
 }
 
 fly_checks() {
-    printf "${cyan}Checking for fly cli version.... "
-    fv=`fly --version`
+    printf "${cyan}Checking for fly version.... "
+    command -v fly > /dev/null 2>&1
     if [ $? -eq 0 ]
     then
+        fv=`fly --version`
         success_version $fv $min_fv
     else
         print_cross
     fi
+}
+
+git_checks() {
+    printf "${cyan}Checking for git.... "
+    command -v git > /dev/null 2>&1
+    success
 }
 
 pull_repo() {
@@ -315,7 +327,7 @@ function valid_ip() {
     return $stat
 }
 
-determine_os() {
+determine_linux_distro() {
     if [ -f /etc/os-release ]; then
         # freedesktop.org and systemd
         . /etc/os-release
@@ -402,19 +414,24 @@ vault_create_policy() {
     success
 }
 
+software_pre_reqs() {
+    git_checks
+    docker_checks
+    docker_compose_checks
+    fly_checks
+    vault_checks
+    jq_checks
+}
+
 if [[ $# -eq 0 ]]
 then
+    software_pre_checks
     check_kernel kernel_version
     capture_num_servers num_servers
     capture_server_ips server_list $num_servers
     capture_username user_name
     capture_password password
     capture_ntp_server ntp_server
-    docker_checks
-    docker_compose_checks
-    fly_checks
-    vault_checks
-    jq_checks
     build_docker_network
     pull_repo "https://github.com/EMC-Underground/vault-consul-docker.git"
     build_deploy_vault
