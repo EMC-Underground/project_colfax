@@ -36,7 +36,7 @@ print_version() {
             printf "${green}${1}\n${reset}"
             ;;
         bad)
-            printf "${red}${1}${reset}"
+            printf "${red}${1}\n${reset}"
             exit 1
             ;;
     esac
@@ -57,6 +57,7 @@ success() {
 }
 
 success_version() {
+    printf `version ${1}`
     if [ "$(version ${1})" -ge "$(version ${2})" ]
     then
         print_version $1 "good"
