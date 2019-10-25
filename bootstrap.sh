@@ -101,7 +101,7 @@ vault_checks() {
 }
 
 jq_checks() {
-    printf "${cyan}Checking the jq version.... "
+    printf "${cyan}Checking jq version.... "
     command -v jq > /dev/null 2>&1
     if [ $? -eq 0 ]
     then
