@@ -37,6 +37,7 @@ print_version() {
             ;;
         bad)
             printf "${red}${1}${reset}"
+            exit 1
             ;;
     esac
 }
