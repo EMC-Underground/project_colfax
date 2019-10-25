@@ -57,11 +57,11 @@ success() {
 }
 
 success_version() {
-    if [ "$(version ${2})" -ge "$(version ${1})" ]
+    if [ "$(version ${1})" -ge "$(version ${2})" ]
     then
-        print_version $2 "good"
+        print_version $1 "good"
     else
-        print_version $2 "bad"
+        print_version $1 "bad"
     fi
 }
 
@@ -128,7 +128,13 @@ fly_checks() {
 git_checks() {
     printf "${cyan}Checking for git.... "
     command -v git > /dev/null 2>&1
-    success
+    if [ $? -eq 0 ]
+    then
+        gv=`git --version | awk '{print $NF}'`
+        success_version $gv $min_gv
+    else
+        print_cross
+    fi
 }
 
 pull_repo() {
