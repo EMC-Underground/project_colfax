@@ -13,7 +13,7 @@ min_dcv="1.24"
 min_vv="1.2.3"
 min_fv="5.5.1"
 min_jv="1.5"
-min_gv="2.21"
+min_gv="1.5"
 
 function version { echo "$@" | awk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'; }
 
