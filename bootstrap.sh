@@ -4,6 +4,7 @@
 red=`tput setaf 1`
 green=`tput setaf 2`
 cyan=`tput setaf 6`
+blue=`tput setaf 4`
 magenta=`tput setaf 5`
 reset=`tput sgr0`
 check="\xE2\x9C\x94"
@@ -36,15 +37,18 @@ print_version() {
             printf "${green}${1}\n${reset}"
             ;;
         bad)
-            printf "${red}${1}\n${reset}"
-            exit 1
+            if [ $1 == "0" ]
+            then
+                printf "${red}Not Installed | minimum ver. ${3}\n${reset}"
+            else
+                printf "${red}${1} | minimum ver. ${3}\n${reset}"
+            fi
             ;;
     esac
 }
 
 print_cross() {
     printf "${red}${cross}\n${reset}"
-    exit 1
 }
 
 success() {
@@ -53,88 +57,92 @@ success() {
         print_check
     else
         print_cross
+        printf "\n${blue}You may artifacts leftover from a previous run.\n"
+        printf "Try running ${green}\"./bootstrap.sh destroy\"${blue} Then try again${reset}\n"
+        exit 1
     fi
 }
 
 success_version() {
     if [ "$(version ${1})" -ge "$(version ${2})" ]
     then
-        print_version $1 "good"
+        print_version $1 "good" $2
     else
-        print_version $1 "bad"
+        print_version $1 "bad" $2
+        versions=1
     fi
 }
 
 docker_checks() {
-    printf "${cyan}Checking docker version.... "
-    command -v docker > /dev/null 2>&1
+    local tool="docker"
+    local dv=0
+    printf "${cyan}Checking ${tool} version.... "
+    command -v $tool > /dev/null 2>&1
     if [ $? -eq 0 ]
     then
-        dv=`docker --version | awk -F'[, ]' '{print $3}'`
-        success_version $dv $min_dv
-    else
-        print_cross
+        dv=`${tool} --version | awk -F'[, ]' '{print $3}'`
     fi
+    success_version $dv $min_dv $tool
 }
 
 docker_compose_checks() {
-    printf "${cyan}Checking docker-compose version.... "
-    command -v docker-compose > /dev/null 2>&1
+    local tool="docker-compose"
+    local dcv=0
+    printf "${cyan}Checking ${tool} version.... "
+    command -v $tool > /dev/null 2>&1
     if [ $? -eq 0 ]
     then
-        dcv=`docker-compose version | awk -F'[, ]' 'NR==1 {print $3}'`
-        success_version $dcv $min_dcv
-    else
-        print_cross
+        dcv=`$tool version | awk -F'[, ]' 'NR==1 {print $3}'`
     fi
+    success_version $dcv $min_dcv $tool
 }
 
 vault_checks() {
-    printf "${cyan}Checking vault version.... "
-    command -v vault > /dev/null 2>&1
+    local tool="vault"
+    local vv=0
+    printf "${cyan}Checking ${tool} version.... "
+    command -v $tool > /dev/null 2>&1
     if [ $? -eq 0 ]
     then
         vv=`vault -v | awk '{print substr($2,2)}'`
-        success_version $vv $min_vv
-    else
-        print_cross
     fi
+    success_version $vv $min_vv $tool
 }
 
 jq_checks() {
-    printf "${cyan}Checking jq version.... "
-    command -v jq > /dev/null 2>&1
+    local tool="jq"
+    local jv=0
+    printf "${cyan}Checking ${tool} version.... "
+    command -v $tool > /dev/null 2>&1
     if [ $? -eq 0 ]
     then
         jv=`jq --version | awk -F- '{print $2}'`
-        success_version $jv $min_jv
-    else
-        print_cross
     fi
+    success_version $jv $min_jv $tool
 }
 
 fly_checks() {
-    printf "${cyan}Checking for fly version.... "
-    command -v fly > /dev/null 2>&1
+    local tool="fly"
+    local fv=0
+    printf "${cyan}Checking ${tool} version.... "
+    command -v $tool > /dev/null 2>&1
     if [ $? -eq 0 ]
     then
         fv=`fly --version`
-        success_version $fv $min_fv
-    else
-        print_cross
     fi
+    success_version $fv $min_fv $tool
 }
 
 git_checks() {
-    printf "${cyan}Checking for git.... "
-    command -v git > /dev/null 2>&1
+    local tool="git"
+    local gv=0
+    printf "${cyan}Checking ${tool} version.... "
+    command -v $tool > /dev/null 2>&1
     if [ $? -eq 0 ]
     then
         gv=`git --version | awk '{print $NF}'`
-        success_version $gv $min_gv
-    else
-        print_cross
     fi
+    success_version $gv $min_gv $tool
 }
 
 pull_repo() {
@@ -158,7 +166,7 @@ generate_keys() {
 deploy_concourse() {
     printf "${cyan}Deploying Concourse.... "
     ip=`ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p'`
-    export DNS_URL=$ip.xip.io
+    export DNS_URL=$ip
     #export DNS_URL="localhost"
     case $kernel_version in
     4|5)
@@ -183,14 +191,22 @@ build_deploy_vault() {
 }
 
 cleanup() {
-    [ -d "vault-consul-docker" ] && cd vault-consul-docker && docker-compose kill && cd ..
-    [ -d "concourse-docker" ] && cd concourse-docker && docker-compose kill && cd ..
-    sudo rm -Rf vault-consul-docker
-    sudo rm -Rf concourse-docker
-    rm concourse-policy.hcl
-    rm pipeline.yml
-    docker system prune -f
-    docker volume prune -f
+    printf "${cyan}Destroying vault.... "
+    [ -d "vault-consul-docker" ] && cd vault-consul-docker && docker-compose kill > /dev/null 2>&1 && cd ..
+    print_check
+    printf "${cyan}Destroying concourse.... "
+    [ -d "concourse-docker" ] && cd concourse-docker && docker-compose kill > /dev/null 2>&1 && cd ..
+    print_check
+    sudo rm -Rf vault-consul-docker > /dev/null
+    sudo rm -Rf concourse-docker > /dev/null
+    rm concourse-policy.hcl > /dev/null 2>&1
+    rm pipeline.yml > /dev/null 2>&1
+    printf "${cyan}Cleaning up docker containers.... "
+    docker system prune -f > /dev/null 2>&1
+    print_check
+    printf "${cyan}Cleaning up docker volumes.... "
+    docker volume prune -f > /dev/null 2>&1
+    print_check
 }
 
 vault_init() {
@@ -288,10 +304,10 @@ build_docker_network() {
 }
 
 capture_num_servers() {
-    printf "${magenta}How many servers will you use (odd numbers only): ${reset}"
     local __resultvar=$1
     until [ $((result%2)) -ne 0 ]
     do
+        printf "${magenta}How many servers will you use (odd numbers only): ${reset}"
         read result
     done
     eval $__resultvar="'$result'"
@@ -354,40 +370,9 @@ function valid_ip() {
     return $stat
 }
 
-determine_linux_distro() {
-    if [ -f /etc/os-release ]; then
-        # freedesktop.org and systemd
-        . /etc/os-release
-        OS=$NAME
-        VER=$VERSION_ID
-    elif type lsb_release >/dev/null 2>&1; then
-        # linuxbase.org
-        OS=$(lsb_release -si)
-        VER=$(lsb_release -sr)
-    elif [ -f /etc/lsb-release ]; then
-        # For some versions of Debian/Ubuntu without lsb_release command
-        . /etc/lsb-release
-        OS=$DISTRIB_ID
-        VER=$DISTRIB_RELEASE
-    elif [ -f /etc/debian_version ]; then
-        # Older Debian/Ubuntu/etc.
-        OS=Debian
-        VER=$(cat /etc/debian_version)
-    elif [ -f /etc/SuSe-release ]; then
-        # Older SuSE/etc.
-        ...
-    elif [ -f /etc/redhat-release ]; then
-        # Older Red Hat, CentOS, etc.
-        ...
-    else
-        # Fall back to uname, e.g. "Linux <version>", also works for BSD, etc.
-        OS=$(uname -s)
-        VER=$(uname -r)
-    fi
-}
-
 concourse_login() {
     printf "${cyan}Logging in to concourse.... "
+    sleep 2
     local i=0
     local o=0
     while [[ $i -lt 1 ]]
@@ -410,14 +395,15 @@ concourse_login() {
 }
 
 set_swarm_pipeline() {
-    printf "${cyan}Creating yo damn shit!.... ${reset}"
-    fly --target main set-pipeline -p build -c pipeline.yml -n > /dev/null 2>&1
+    concourse_login
+    printf "${cyan}Creating build pipeline.... ${reset}"
+    fly --target main set-pipeline -p build -c pipeline.yml -n > /dev/null
     success
-    printf "${cyan}Unpausing yo damn shit!.... ${reset}"
-    fly --target main unpause-pipeline -p build > /dev/null 2>&1
+    printf "${cyan}Unpausing the build pipeline.... ${reset}"
+    fly --target main unpause-pipeline -p build > /dev/null
     success
-    printf "${cyan}Deploying yo damn shit!.... ${reset}"
-    fly --target main trigger-job --job=build/deploy-swarm > /dev/null 2>&1
+    printf "${cyan}Triggering the build-swarm job.... ${reset}"
+    fly --target main trigger-job --job=build/deploy-swarm > /dev/null
     success
 }
 
@@ -441,19 +427,36 @@ vault_create_policy() {
     success
 }
 
+print_title() {
+    printf "${blue}Project Colfax\n"
+    printf "This project is aimed to deploy a Dell Tech Automation Platform\n"
+    printf "Please report issues to https://github.com/EMC-Underground/project_colfax${reset}\n\n"
+}
+
 software_pre_reqs() {
+    versions=0
     git_checks
     docker_checks
     docker_compose_checks
     fly_checks
     vault_checks
     jq_checks
+    check_kernel kernel_version
+    if [ $versions -eq 1 ]
+    then
+        printf "${red}\n##### Pre-Reqs not met! #####${reset}\n\n"
+        printf "${green}This command will run an Ansible Playbook to install\n"
+        printf "all pre-requisite software (inc. Ansible)\n\n"
+        echo "${cyan}COMMAND HERE${reset}"
+        exit 1
+    fi
+    printf "\n${green}All Pre-Reqs met!${reset}\n\n"
 }
 
 if [[ $# -eq 0 ]]
 then
+    print_title
     software_pre_reqs
-    check_kernel kernel_version
     capture_num_servers num_servers
     capture_server_ips server_list $num_servers
     capture_username user_name
@@ -479,7 +482,6 @@ then
     create_vault_secret "concourse/main/build/" "ntp_server" $ntp_server
     create_vault_secret "concourse/main/build/" "server_list" $server_list
     build_pipeline
-    concourse_login
     set_swarm_pipeline
     echo "${cyan}Vault Concourse Key: ${green}${token}${reset}"
     echo "${cyan}Vault Root Key: ${green}${roottoken}${reset}"

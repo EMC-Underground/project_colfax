@@ -1,3 +1,4 @@
 vault-consul-docker
 concourse-docker
 concourse-policy.hcl
+pipeline.yml
