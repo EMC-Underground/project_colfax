@@ -1,0 +1,7 @@
+---
+- name: "Download lastest stable version of docker-compose"
+  get_url:
+    url: "https://github.com/docker/compose/releases/download/1.24.1/docker-compose-$(uname -s)-$(uname -m)"
+    dest: /usr/local/bin/docker-compose
+  tags:
+    - docker-compose
