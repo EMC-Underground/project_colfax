@@ -99,11 +99,11 @@
     tags:
       - kernel
 
-  - name: "Reboot server"
-    reboot:
-      reboot_timeout: 600
-    tags:
-      - kernel
+  - name: Restart server
+    command: /sbin/shutdown -r +1
+    async: 0
+    poll: 0
+    ignore_errors: true
 
   - name: "Disable Centos FireWall Service"
     systemd:
