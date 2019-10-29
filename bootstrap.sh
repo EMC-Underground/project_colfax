@@ -507,9 +507,7 @@ main() {
     echo "${green}${server_list[*]}"
 }
 
-echo $0
-
-case "$1" in
+case "$0" in
     "destroy")
         cleanup
         destroy
