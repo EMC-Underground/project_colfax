@@ -512,6 +512,7 @@ main() {
 
 case "$0" in
     "destroy")
+        print_title
         cleanup
         destroy
         exit 0
