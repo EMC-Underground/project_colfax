@@ -7,15 +7,14 @@
   - name: "Installing Git"
     package: pkg={{ item }} state=installed
     with_items:
-    - git
-    - unzip
+      - git
     tags:
       - git
 
   - name: "Installing Git"
     package: pkg={{ item }} state=installed
     with_items:
-    - unzip
+      - unzip
     tags:
       - vault
 
