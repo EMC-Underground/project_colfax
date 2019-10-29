@@ -448,6 +448,8 @@ print_title() {
     printf "Please report issues to https://github.com/EMC-Underground/project_colfax${reset}\n\n"
 }
 
+function join_by { local IFS="$1"; shift; echo "$*"; }
+
 software_pre_reqs() {
     versions=0
     git_checks
