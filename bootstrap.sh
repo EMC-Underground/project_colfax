@@ -268,27 +268,27 @@ vault_create_policy() {
 }
 
 pipeline_add_job() {
-    local name=$1 repo_url=$2
-    local return[0]="  - name: ${name}_repo
+    local name=$1 repo_url=$2 repo_branch=$3
+    local resource="  - name: ${name}_repo
     type: git
     source:
       uri: ${repo_url}
-      branch: dev"
-    local return[1]="  - name: ${name}_job
+      branch: ${repo_branch}"
+    local job="  - name: ${name}_job
     public: true
     plan:
       - get: ${name}_repo
       - task: deploy_${name}
         file: ${name}_repo/task/task.yml"
-    echo -e "${return[0]}\n$(cat pipeline.yml)" > pipeline.yml
-    echo -e "${return[1]}\n" >> pipeline.yml
+    echo -e "${resource}\n$(cat pipeline.yml)" > pipeline.yml
+    echo -e "${job}\n" >> pipeline.yml
 }
 
 build_pipeline() {
     printf "${cyan}Creating pipeline definition.... ${reset}"
     echo -e "jobs:" > pipeline.yml
-    pipeline_add_job "swarm" "https://github.com/EMC-Underground/ansible_install_dockerswarm"
-    pipeline_add_job "concourse" "https://github.com/EMC-Underground/service_concourse"
+    pipeline_add_job "swarm" "https://github.com/EMC-Underground/ansible_install_dockerswarm" "dev"
+    pipeline_add_job "concourse" "https://github.com/EMC-Underground/service_concourse" "master"
     echo -e "resources:\n$(cat pipeline.yml)" > pipeline.yml
     echo -e "---\n$(cat pipeline.yml)" > pipeline.yml
     [ -f pipeline.yml ]
@@ -516,11 +516,7 @@ case "$0" in
         destroy
         exit 0
         ;;
-    ""|" ")
-        ;;
     *)
-        echo $0
-        echo "${red}Did you mean ./bootstrap destroy?${reset}"
         ;;
 esac
 
