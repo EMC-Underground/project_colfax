@@ -3,38 +3,42 @@
   connection: localhost
   become: true
 
-- name: "Download lastest stable version of docker-compose"
-  get_url:
-    url: "https://github.com/docker/compose/releases/download/1.24.1/docker-compose-{{ ansible_system }}-{{ ansible_userspace_architecture }}"
-    dest: /usr/local/bin/docker-compose
-    mode: 'u+x,g+x'
-  tags:
-    - docker-compose
+  tasks:
+  - name: "Download lastest stable version of docker-compose"
+    get_url:
+      url: "https://github.com/docker/compose/releases/download/1.24.1/docker-compose-{{ ansible_system }}-{{ ansible_userspace_architecture }}"
+      dest: /usr/local/bin/docker-compose
+      mode: 'u+x,g+x'
+    tags:
+      - docker-compose
 
-- name: "Download lastest stable version of fly-cli"
-  get_url:
-    url: "https://github.com/concourse/concourse/releases/download/v5.6.0/fly-5.6.0-linux-amd64.tgz"
-    dest: /tmp
-  tags:
-    - fly-cli
+  - name: "Download lastest stable version of fly-cli"
+    get_url:
+      url: "https://github.com/concourse/concourse/releases/download/v5.6.0/fly-5.6.0-linux-amd64.tgz"
+      dest: /tmp
+    tags:
+      - fly-cli
 
-- name: "Unzip the Fly tgz file"
-  unarchive:
-    src: /tmp/fly-5.6.0-linux-amd64.tgz
-    dest: /usr/local/bin/
-  tags:
-    - fly-cli
+  - name: "Unzip the Fly tgz file"
+    unarchive:
+      src: /tmp/fly-5.6.0-linux-amd64.tgz
+      dest: /usr/local/bin/
+    tags:
+      - fly-cli
 
-- name: "Download lastest stable version of fly-cli"
-  get_url:
-    url: "https://github.com/concourse/concourse/releases/download/v5.6.0/fly-5.6.0-linux-amd64.tgz"
-    dest: /tmp
-  tags:
-    - jq
+  - name: "Download lastest stable version of jq"
+    get_url:
+      url: "https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64"
+      dest: /usr/local/bin/jq
+      mode: 'u+x,g+x'
+    tags:
+      - jq
 
-- name: "Unzip the Fly tgz file"
-  unarchive:
-    src: /tmp/fly-5.6.0-linux-amd64.tgz
-    dest: /usr/local/bin/
-  tags:
-    - jq
+
+  - name: "Installing Git"
+    package: pkg={{ item }} state=installed
+    with_items:
+    - git
+    tags:
+    - git
+
