@@ -10,14 +10,14 @@
     - git
     - unzip
     tags:
-    - git
+      - git
 
   - name: "Installing Git"
     package: pkg={{ item }} state=installed
     with_items:
     - unzip
     tags:
-    - vault
+      - vault
 
   - name: "Download lastest stable version of docker-compose"
     get_url:
