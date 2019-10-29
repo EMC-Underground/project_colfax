@@ -148,14 +148,13 @@ git_checks() {
 }
 
 pull_repo() {
-    local repo_name=`echo $1 | awk -F'/' '{print $NF}' | awk -F'.' '{print $1}'`
+    local repo_url=$1 repo_name=`echo $1 | awk -F'/' '{print $NF}' | awk -F'.' '{print $1}'`
     printf "${cyan}Cloning ${repo_name} repo.... "
-    if [ ! -d "./${repo_name}" ]
+    if [ -d "/tmp/${repo_name}" ]
     then
-        git clone $1 > /dev/null 2>&1
+        rm /tmp/$repo_name > /dev/null 2>&1
     fi
-    cd ./$repo_name
-    git pull > /dev/null 2>&1
+    git clone $repo_url /tmp/$repo_name > /dev/null 2>&1
     success
 }
 
@@ -180,34 +179,41 @@ deploy_concourse() {
     *)
         print_cross;;
     esac
+    cd /tmp/concourse-docker
     docker-compose up -d > /dev/null 2>&1
     success
-    cd ../
+    cd -
 }
 
 build_deploy_vault() {
     printf "${cyan}Deploying Vault.... "
+    cd /tmp/vault-consul-docker
     docker-compose up -d --build > /dev/null 2>&1
     success
-    cd ../
+    cd -
+}
+
+destroy() {
+    printf "${cyan}Destroying vault.... "
+    docker kill `docker ps -q --filter "name=vault-consul-docker"` > /dev/null 2>&1
+    print_check
+    printf "${cyan}Destroying concourse.... "
+    docker kill `docker ps -q --filter "name=concourse-docker"` > /dev/null 2>&1
+    print_check
+    printf "${cyan}Pruning docker containers and networks.... "
+    docker system prune -f > /dev/null 2>&1
+    print_check
+    printf "${cyan}Pruning docker volumes.... "
+    docker volume prune -f > /dev/null 2>&1
+    print_check
 }
 
 cleanup() {
-    printf "${cyan}Destroying vault.... "
-    [ -d "vault-consul-docker" ] && cd vault-consul-docker && docker-compose kill > /dev/null 2>&1 && cd ..
-    print_check
-    printf "${cyan}Destroying concourse.... "
-    [ -d "concourse-docker" ] && cd concourse-docker && docker-compose kill > /dev/null 2>&1 && cd ..
-    print_check
-    sudo rm -Rf vault-consul-docker > /dev/null
-    sudo rm -Rf concourse-docker > /dev/null
-    rm concourse-policy.hcl > /dev/null 2>&1
-    rm pipeline.yml > /dev/null 2>&1
-    printf "${cyan}Cleaning up docker containers.... "
-    docker system prune -f > /dev/null 2>&1
-    print_check
-    printf "${cyan}Cleaning up docker volumes.... "
-    docker volume prune -f > /dev/null 2>&1
+    printf "${cyan}Cleaning up files and folders.... "
+    [ -d "/tmp/vault-consul-docker" ] && sudo rm -Rf /tmp/vault-consul-docker > /dev/null 2>&1
+    [ -d "/tmp/concourse-docker" ] && sudo rm -Rf /tmp/concourse-docker > /dev/null 2>&1
+    [ -f "/tmp/concourse-policy.hcl" ] && sudo rm /tmp/concourse-policy.hcl > /dev/null 2>&1
+    [ -f "/tmp/pipeline.yml" ] && sudo rm /tmp/pipeline.yml > /dev/null 2>&1
     print_check
 }
 
@@ -407,7 +413,7 @@ concourse_login() {
 set_swarm_pipeline() {
     concourse_login
     printf "${cyan}Creating build pipeline.... ${reset}"
-    fly --target main set-pipeline -p build -c pipeline.yml -n > /dev/null
+    fly --target main set-pipeline -p build -c /tmp/pipeline.yml -n > /dev/null
     success
     printf "${cyan}Unpausing the build pipeline.... ${reset}"
     fly --target main unpause-pipeline -p build > /dev/null
@@ -433,12 +439,12 @@ vault_create_policy() {
     echo 'path "concourse/*" {
   policy = "read"
 }' >> concourse-policy.hcl
-    vault policy write -address=http://localhost:8200 concourse ./concourse-policy.hcl > /dev/null 2>&1
+    vault policy write -address=http://localhost:8200 concourse /tmp/concourse-policy.hcl > /dev/null 2>&1
     success
 }
 
 print_title() {
-    printf "${blue}Project Colfax\n"
+    printf "${blue}---==Project Colfax==---\n"
     printf "This project is aimed to deploy a Dell Tech Automation Platform\n"
     printf "Please report issues to https://github.com/EMC-Underground/project_colfax${reset}\n\n"
 }
@@ -464,8 +470,7 @@ software_pre_reqs() {
     printf "\n${green}All Pre-Reqs met!${reset}\n\n"
 }
 
-if [[ $# -eq 0 ]]
-then
+main() {
     print_title
     software_pre_reqs
     capture_num_servers num_servers
@@ -500,16 +505,21 @@ then
     echo "${cyan}Vault URL: ${green}http://$DNS_URL:8200${reset}"
     printf "${cyan}Here are your server(s): "
     echo "${green}${server_list[*]}"
-fi
+}
+
+echo $0
 
 case "$1" in
     "destroy")
         cleanup
+        destroy
+        exit 0
         ;;
     "")
-        echo "${green}FIN${reset}"
         ;;
     *)
         echo "${red}Did you mean ./bootstrap destroy?${reset}"
         ;;
 esac
+
+main
