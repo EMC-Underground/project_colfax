@@ -4,6 +4,15 @@
   become: true
 
   tasks:
+  - name: "update package manager"
+    package:
+      name: '*'
+      state: latest
+    tags:
+      - kernel
+      - git
+      - vault
+
   - name: "Installing Git"
     package: pkg={{ item }} state=installed
     with_items:
@@ -111,13 +120,6 @@
     tags:
       - docker
 
-  - name: Copies override.conf for enabling Docker API
-    copy:
-      src: ./files/override.conf
-      dest: /etc/systemd/system/docker.service.d/override.conf
-    tags:
-      - docker
-
   - name: "Make sure the service starts at boot and is currently started"
     systemd:
       name: docker
@@ -133,13 +135,6 @@
     tags:
       - docker
 
-  - name: "YUM update"
-    yum:
-      name: '*'
-      state: latest
-    tags:
-      - kernel
-
   - name: "Add gpg key for repo"
     rpm_key:
       state: present
@@ -147,7 +142,7 @@
     tags:
       - kernel
 
-  - name: "Enable repo"
+  - name: "Enable kernel repo"
     yum:
       name: "https://www.elrepo.org/elrepo-release-7.0-3.el7.elrepo.noarch.rpm"
       state: present
@@ -164,12 +159,11 @@
 
   - name: "Set Default Kernel to 5.x in grub"
     command: grub2-set-default 0
-    become: yes
     tags:
       - kernel
 
   - name: Restart server
-    command: /sbin/shutdown -r +1
+    command: /sbin/shutdown
     async: 0
     poll: 0
     ignore_errors: true
