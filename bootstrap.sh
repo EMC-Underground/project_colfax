@@ -263,7 +263,7 @@ vault_create_policy() {
     echo 'path "concourse/*" {
   policy = "read"
 }' >> /tmp/concourse-policy.hcl
-    vault policy write -address=http://localhost:8200 concourse /tmp/concourse-policy.hcl > /dev/null 2>&1
+    vault policy write -address=http://localhost:8200 concourse /tmp/concourse-policy.hcl
     success
 }
 
