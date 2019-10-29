@@ -15,6 +15,7 @@ min_vv="1.2.3"
 min_fv="5.5.1"
 min_jv="1.5"
 min_gv="1.5"
+failed_software=()
 
 function version { echo "$@" | awk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'; }
 
@@ -70,6 +71,7 @@ success_version() {
     else
         print_version $1 "bad" $2
         versions=1
+        failed_software+=$3
     fi
 }
 
@@ -257,23 +259,31 @@ vault_create_policy() {
     success
 }
 
-build_pipeline() {
-    printf "${cyan}Creating pipeline definition.... ${reset}"
-    echo '---
-resources:
-  - name: swarm-repo
+pipeline_add_job() {
+    local name=$1 repo_url=$2
+    local return[0]="  - name: ${name}_repo
     type: git
     source:
-      uri: https://github.com/EMC-Underground/ansible_install_dockerswarm
-      branch: master
-
-jobs:
-  - name: deploy-swarm
+      uri: ${repo_url}
+      branch: master"
+    local return[1]="  - name: ${name}_job
     public: true
     plan:
-      - get: swarm-repo
-      - task: ansible-playbook
-        file: swarm-repo/task/task.yml' >> pipeline.yml
+      - get: ${name}_repo
+      - task: deploy_${name}
+        file: ${name}_repo/task/task.yml"
+    echo -e "${return[0]}\n$(cat pipeline.yml)" > pipeline.yml
+    echo -e "${return[1]}\n" >> pipeline.yml
+}
+
+build_pipeline() {
+    printf "${cyan}Creating pipeline definition.... ${reset}"
+    echo -e "jobs:" > pipeline.yml
+    pipeline_add_job "swarm" "https://github.com/EMC-Underground/ansible_install_dockerswarm"
+    pipeline_add_job "concourse" "https://github.com/EMC-Underground/service_concourse"
+    echo -e "resources:\n$(cat pipeline.yml)" > pipeline.yml
+    echo -e "---\n$(cat pipeline.yml)" > pipeline.yml
+    [ -f pipeline.yml ]
     success
 }
 
@@ -403,7 +413,7 @@ set_swarm_pipeline() {
     fly --target main unpause-pipeline -p build > /dev/null
     success
     printf "${cyan}Triggering the build-swarm job.... ${reset}"
-    fly --target main trigger-job --job=build/deploy-swarm > /dev/null
+    fly --target main trigger-job --job=build/swarm_job > /dev/null
     success
 }
 
@@ -444,10 +454,11 @@ software_pre_reqs() {
     check_kernel kernel_version
     if [ $versions -eq 1 ]
     then
+        local software=$(join_by , "${failed_software[@]}")
         printf "${red}\n##### Pre-Reqs not met! #####${reset}\n\n"
         printf "${green}This command will run an Ansible Playbook to install\n"
         printf "all pre-requisite software (inc. Ansible)\n\n"
-        echo "${cyan}COMMAND HERE${reset}"
+        echo ${cyan}${software[*]}${reset}
         exit 1
     fi
     printf "\n${green}All Pre-Reqs met!${reset}\n\n"
