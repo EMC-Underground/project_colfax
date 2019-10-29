@@ -184,7 +184,7 @@ deploy_concourse() {
     cd /tmp/concourse-docker
     docker-compose up -d > /dev/null 2>&1
     success
-    cd -
+    cd - > /dev/null 2>&1
 }
 
 build_deploy_vault() {
@@ -192,7 +192,7 @@ build_deploy_vault() {
     cd /tmp/vault-consul-docker
     docker-compose up -d --build > /dev/null 2>&1
     success
-    cd -
+    cd - > /dev/null 2>&1
 }
 
 destroy() {
@@ -262,7 +262,7 @@ vault_create_policy() {
     printf "${cyan}Create vault policy.... "
     echo 'path "concourse/*" {
   policy = "read"
-}' >> concourse-policy.hcl
+}' >> /tmp/concourse-policy.hcl
     vault policy write -address=http://localhost:8200 concourse ./concourse-policy.hcl > /dev/null 2>&1
     success
 }
