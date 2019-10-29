@@ -1,6 +1,27 @@
 ---
-- hosts: all
+- hosts: 127.0.0.1
+  connection: localhost
   become: true
-  roles:
-    - all
+
+- name: "Download lastest stable version of docker-compose"
+  get_url:
+    url: "https://github.com/docker/compose/releases/download/1.24.1/docker-compose-{{ ansible_system }}-{{ ansible_userspace_architecture }}"
+    dest: /usr/local/bin/docker-compose
+    mode: 'u+x,g+x'
+  tags:
+    - docker-compose
+
+- name: "Download lastest stable version of fly-cli"
+  get_url:
+    url: "https://github.com/concourse/concourse/releases/download/v5.6.0/fly-5.6.0-linux-amd64.tgz"
+    dest: /tmp
+  tags:
+    - fly-cli
+
+- name: "Unzip the Fly tgz file"
+  unarchive:
+    src: /tmp/fly-5.6.0-linux-amd64.tgz
+    dest: /usr/local/bin/
+  tags:
+    - fly-cli
 
