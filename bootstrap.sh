@@ -65,13 +65,14 @@ success() {
 }
 
 success_version() {
-    if [ "$(version ${1})" -ge "$(version ${2})" ]
+    local curr_ver=$1 req_ver=$2 tool=$3
+    if [ "$(version ${curr_ver})" -ge "$(version ${req_ver})" ]
     then
-        print_version $1 "good" $2
+        print_version $curr_ver "good" $req_ver
     else
-        print_version $1 "bad" $2
+        print_version $curr_ver "bad" $req_ver
         versions=1
-        failed_software+=$3
+        failed_software=( "${failed_software[@]}" "${tool}" )
     fi
 }
 
@@ -432,8 +433,6 @@ capture_ntp_server() {
     eval $__resultvar="'$result'"
 }
 
-function join_by { local IFS="$1"; shift; echo "$*"; }
-
 vault_create_policy() {
     printf "${cyan}Create vault policy.... "
     echo 'path "concourse/*" {
@@ -458,13 +457,14 @@ software_pre_reqs() {
     vault_checks
     jq_checks
     check_kernel kernel_version
+    [ $kernel_version -lt 4 ] && failed_software=( "${failed_software[@]}" "kernel" )
     if [ $versions -eq 1 ]
     then
-        local software=$(join_by , "${failed_software[@]}")
         printf "${red}\n##### Pre-Reqs not met! #####${reset}\n\n"
         printf "${green}This command will run an Ansible Playbook to install\n"
         printf "all pre-requisite software (inc. Ansible)\n\n"
-        echo ${cyan}${software[*]}${reset}
+        IFS=","
+        echo "${failed_software[*]}"
         exit 1
     fi
     printf "\n${green}All Pre-Reqs met!${reset}\n\n"
@@ -503,8 +503,8 @@ main() {
     echo "${cyan}Vault Root Key: ${green}${roottoken}${reset}"
     echo "${cyan}Concourse URL: ${green}http://$DNS_URL:8080${reset}"
     echo "${cyan}Vault URL: ${green}http://$DNS_URL:8200${reset}"
-    printf "${cyan}Here are your server(s): "
-    echo "${green}${server_list[*]}"
+    printf "${cyan}Here are your server(s): ${reset}"
+    echo "${green}${server_list[*]}${reset}"
 }
 
 case "$0" in
@@ -513,11 +513,13 @@ case "$0" in
         destroy
         exit 0
         ;;
-    "")
+    ""|" ")
         ;;
     *)
+        echo $0
         echo "${red}Did you mean ./bootstrap destroy?${reset}"
         ;;
 esac
 
 main
+cleanup
