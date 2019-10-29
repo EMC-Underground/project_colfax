@@ -4,6 +4,21 @@
   become: true
 
   tasks:
+  - name: "Installing Git"
+    package: pkg={{ item }} state=installed
+    with_items:
+    - git
+    - unzip
+    tags:
+    - git
+
+  - name: "Installing Git"
+    package: pkg={{ item }} state=installed
+    with_items:
+    - unzip
+    tags:
+    - vault
+
   - name: "Download lastest stable version of docker-compose"
     get_url:
       url: "https://github.com/docker/compose/releases/download/1.24.1/docker-compose-{{ ansible_system }}-{{ ansible_userspace_architecture }}"
@@ -17,14 +32,15 @@
       url: "https://github.com/concourse/concourse/releases/download/v5.6.0/fly-5.6.0-linux-amd64.tgz"
       dest: /tmp
     tags:
-      - fly-cli
+      - fly
 
   - name: "Unzip the Fly tgz file"
     unarchive:
       src: /tmp/fly-5.6.0-linux-amd64.tgz
       dest: /usr/local/bin/
+      mode: 'u+x,g+x'
     tags:
-      - fly-cli
+      - fly
 
   - name: "Download lastest stable version of jq"
     get_url:
@@ -34,11 +50,125 @@
     tags:
       - jq
 
-
-  - name: "Installing Git"
-    package: pkg={{ item }} state=installed
-    with_items:
-    - git
+  - name: "Download lastest stable version of vault cli"
+    get_url:
+      url: "https://releases.hashicorp.com/vault/1.2.3/vault_1.2.3_linux_amd64.zip"
+      dest: /tmp
     tags:
-    - git
+      - vault
 
+  - name: "Install vault cli"
+    unarchive:
+      src: /tmp/vault_1.2.3_linux_amd64.zip
+      dest: /usr/local/bin/
+      mode: 'u+x,g+x'
+    tags:
+      - vault
+
+  - name: "YUM update"
+    yum:
+      name: '*'
+      state: latest
+    tags:
+      - kernel
+
+  - name: "Add gpg key for repo"
+    rpm_key:
+      state: present
+      key: https://www.elrepo.org/RPM-GPG-KEY-elrepo.org
+    tags:
+      - kernel
+
+  - name: "Enable repo"
+    yum:
+      name: "https://www.elrepo.org/elrepo-release-7.0-3.el7.elrepo.noarch.rpm"
+      state: present
+    tags:
+      - kernel
+
+  - name: "Upgrade Kernel"
+    yum:
+      name: kernel-ml
+      enablerepo: elrepo-kernel
+      state: present
+    tags:
+      - kernel
+
+  - name: "Set Default Kernel to 5.x in grub"
+    command: grub2-set-default 0
+    become: yes
+    tags:
+      - kernel
+
+  - name: "Reboot server"
+    reboot:
+      reboot_timeout: 600
+    tags:
+      - kernel
+
+  - name: "Disable Centos FireWall Service"
+    systemd:
+      name: firewalld
+      state: stopped
+      enabled: no
+    when: ansible_facts['distribution'] == "CentOS"
+    tags:
+      - docker
+
+  - name: "Disable Ubuntu FireWall Service"
+    systemd:
+      name: ufw
+      state: stopped
+      enabled: no
+    when: ansible_facts['distribution'] == "Ubuntu"
+    tags:
+      - docker
+
+  - name: Add Docker repo
+    get_url:
+      url: https://download.docker.com/linux/centos/docker-ce.repo
+      dest: /etc/yum.repos.d/docer-ce.repo
+    when: ansible_facts['distribution'] == "CentOS"
+    tags:
+      - docker
+
+  - apt_repository:
+      repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable
+      state: present
+    when: ansible_facts['distribution'] == "Ubuntu"
+    tags:
+      - docker
+
+  - name: "Install Docker-CE"
+    package:
+      name: docker-ce
+      state: present
+    tags:
+      - docker
+
+  - name: Creates directory
+    file:
+      path: /etc/systemd/system/docker.service.d
+      state: directory
+    tags:
+      - docker
+
+  - name: Copies override.conf for enabling Docker API
+    copy:
+      src: ./files/override.conf
+      dest: /etc/systemd/system/docker.service.d/override.conf
+    tags:
+      - docker
+
+  - name: "Make sure the service starts at boot and is currently started"
+    systemd:
+      name: docker
+      daemon_reload: yes
+      state: started
+      enabled: yes
+    tags:
+      - docker
+
+  - name: Adding user root
+    user: name=root
+          group=docker
