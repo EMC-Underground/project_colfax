@@ -15,7 +15,7 @@ min_vv="1.2.3"
 min_fv="5.5.1"
 min_jv="1.5"
 min_gv="1.5"
-app_version="v0.4.1"
+app_version="v0.4.2"
 failed_software=()
 
 function version { echo "$@" | awk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'; }
@@ -263,7 +263,7 @@ vault_create_policy() {
     echo 'path "concourse/*" {
   policy = "read"
 }' >> /tmp/concourse-policy.hcl
-    vault policy write -address=http://localhost:8200 concourse ./concourse-policy.hcl > /dev/null 2>&1
+    vault policy write -address=http://localhost:8200 concourse /tmp/concourse-policy.hcl > /dev/null 2>&1
     success
 }
 
