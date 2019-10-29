@@ -15,6 +15,7 @@ min_vv="1.2.3"
 min_fv="5.5.1"
 min_jv="1.5"
 min_gv="1.5"
+app_version="v0.4.1"
 failed_software=()
 
 function version { echo "$@" | awk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'; }
@@ -443,7 +444,7 @@ vault_create_policy() {
 }
 
 print_title() {
-    printf "${blue}---==Project Colfax==---\n"
+    printf "${blue}---==Project Colfax ${app_version}==---\n"
     printf "This project is aimed to deploy a Dell Tech Automation Platform\n"
     printf "Please report issues to https://github.com/EMC-Underground/project_colfax${reset}\n\n"
 }
