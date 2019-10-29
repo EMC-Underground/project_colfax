@@ -64,47 +64,6 @@
     tags:
       - vault
 
-  - name: "YUM update"
-    yum:
-      name: '*'
-      state: latest
-    tags:
-      - kernel
-
-  - name: "Add gpg key for repo"
-    rpm_key:
-      state: present
-      key: https://www.elrepo.org/RPM-GPG-KEY-elrepo.org
-    tags:
-      - kernel
-
-  - name: "Enable repo"
-    yum:
-      name: "https://www.elrepo.org/elrepo-release-7.0-3.el7.elrepo.noarch.rpm"
-      state: present
-    tags:
-      - kernel
-
-  - name: "Upgrade Kernel"
-    yum:
-      name: kernel-ml
-      enablerepo: elrepo-kernel
-      state: present
-    tags:
-      - kernel
-
-  - name: "Set Default Kernel to 5.x in grub"
-    command: grub2-set-default 0
-    become: yes
-    tags:
-      - kernel
-
-  - name: Restart server
-    command: /sbin/shutdown -r +1
-    async: 0
-    poll: 0
-    ignore_errors: true
-
   - name: "Disable Centos FireWall Service"
     systemd:
       name: firewalld
@@ -171,3 +130,48 @@
   - name: Adding user root
     user: name=root
           group=docker
+    tags:
+      - docker
+
+  - name: "YUM update"
+    yum:
+      name: '*'
+      state: latest
+    tags:
+      - kernel
+
+  - name: "Add gpg key for repo"
+    rpm_key:
+      state: present
+      key: https://www.elrepo.org/RPM-GPG-KEY-elrepo.org
+    tags:
+      - kernel
+
+  - name: "Enable repo"
+    yum:
+      name: "https://www.elrepo.org/elrepo-release-7.0-3.el7.elrepo.noarch.rpm"
+      state: present
+    tags:
+      - kernel
+
+  - name: "Upgrade Kernel"
+    yum:
+      name: kernel-ml
+      enablerepo: elrepo-kernel
+      state: present
+    tags:
+      - kernel
+
+  - name: "Set Default Kernel to 5.x in grub"
+    command: grub2-set-default 0
+    become: yes
+    tags:
+      - kernel
+
+  - name: Restart server
+    command: /sbin/shutdown -r +1
+    async: 0
+    poll: 0
+    ignore_errors: true
+    tags:
+      - kernel
