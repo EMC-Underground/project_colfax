@@ -25,3 +25,16 @@
   tags:
     - fly-cli
 
+- name: "Download lastest stable version of fly-cli"
+  get_url:
+    url: "https://github.com/concourse/concourse/releases/download/v5.6.0/fly-5.6.0-linux-amd64.tgz"
+    dest: /tmp
+  tags:
+    - jq
+
+- name: "Unzip the Fly tgz file"
+  unarchive:
+    src: /tmp/fly-5.6.0-linux-amd64.tgz
+    dest: /usr/local/bin/
+  tags:
+    - jq
