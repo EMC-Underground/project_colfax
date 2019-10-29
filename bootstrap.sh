@@ -265,7 +265,7 @@ pipeline_add_job() {
     type: git
     source:
       uri: ${repo_url}
-      branch: master"
+      branch: dev"
     local return[1]="  - name: ${name}_job
     public: true
     plan:
