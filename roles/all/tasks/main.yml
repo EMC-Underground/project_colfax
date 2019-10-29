@@ -17,6 +17,6 @@
 - name: "Unzip the Fly tgz file"
   unarchive:
     src: /tmp/fly-5.6.0-linux-amd64.tgz
-    dest: /usr/local/bin/fly
+    dest: /usr/local/bin/
   tags:
     - fly-cli
