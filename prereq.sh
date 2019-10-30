@@ -7,7 +7,7 @@ yum_checks() {
     command -v $tool > /dev/null 2>&1
     if [ $? -eq 0 ]
     then
-        $result=true
+        result=true
     fi
     eval $__resultvar="'$result'"
 }
