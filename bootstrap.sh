@@ -414,7 +414,7 @@ concourse_login() {
 
 fly_sync() {
     printf "${cyan}Syncing the fly cli.... ${reset}"
-    sudo fly --target main sync
+    fly --target main sync > /dev/null 2>&1
     success
 }
 

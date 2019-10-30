@@ -2,6 +2,8 @@
 - hosts: 127.0.0.1
   connection: localhost
   become: true
+  vars:
+    fly_version: 5.5.1
 
   tasks:
   - name: "update package manager"
@@ -37,7 +39,7 @@
 
   - name: "Download lastest stable version of fly-cli"
     get_url:
-      url: "https://github.com/concourse/concourse/releases/download/v5.6.0/fly-5.6.0-linux-amd64.tgz"
+      url: "https://github.com/concourse/concourse/releases/download/v{{ fly_version }}/fly-{{ fly_version }}-linux-amd64.tgz"
       dest: /tmp
     tags:
       - fly
