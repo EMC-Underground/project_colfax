@@ -37,17 +37,11 @@
     tags:
       - docker-compose
 
-  - name: "Download lastest stable version of fly-cli"
-    get_url:
-      url: "https://github.com/concourse/concourse/releases/download/v{{ fly_version }}/fly-{{ fly_version }}-linux-amd64.tgz"
-      dest: /tmp
-    tags:
-      - fly
-
   - name: "Unzip the Fly tgz file"
     unarchive:
-      src: /tmp/fly-5.6.0-linux-amd64.tgz
+      src: "https://github.com/concourse/concourse/releases/download/v{{ fly_version }}/fly-{{ fly_version }}-linux-amd64.tgz"
       dest: /usr/local/bin/
+      keep_newer: no
       mode: 'u+x,g+x'
     tags:
       - fly
