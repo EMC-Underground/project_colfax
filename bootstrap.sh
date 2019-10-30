@@ -476,6 +476,12 @@ print_finale() {
     printf "${blue}##             ${magenta}User: ${green}test\n"
     printf "${blue}##         ${magenta}Password: ${green}test\n"
     printf "${blue}##########################################################${reset}\n"
+    printf "\n"
+    printf "${blue}#################### ${magenta}SWARM INFO ${blue}######################\n"
+    printf "${blue}##              ${magenta}If running from a remote CLI\n"
+    printf "${blue}##              ${green}export DOCKER_HOST=${server_list[0]}\n"
+    printf "${blue}##             ${magenta}Proxy URL: https://proxy.${server_list}.xip.io\n"
+    printf "${blue}##########################################################${reset}\n"
 }
 
 main() {
@@ -508,8 +514,6 @@ main() {
     build_pipeline
     set_swarm_pipeline
     print_finale
-    printf "${cyan}Here are your server(s): ${reset}"
-    echo "${green}${server_list[*]}${reset}"
 }
 
 case "$0" in
