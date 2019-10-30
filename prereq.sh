@@ -45,8 +45,8 @@ main() {
     local yum apt
     yum_checks $yum
     apt_checks $apt
-    if [ $yum == "0" ] ; then yum_steps ; fi
-    if [ $apt == "0" ] ; then apt_steps ; fi
+    if [ $yum -eq "0" ] ; then yum_steps ; fi
+    if [ $apt -eq "0" ] ; then apt_steps ; fi
     install_prereqs
 }
 
