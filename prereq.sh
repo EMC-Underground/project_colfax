@@ -45,8 +45,8 @@ main() {
     local yum apt
     yum_checks $yum
     apt_checks $apt
-    [ "$yum" = true ] && yum_steps
-    [ "$apt" = true ] && apt_steps
+    if [ "$yum" = true ] ; then yum_steps ; fi
+    if [ "$apt" = true ] ; then apt_steps ; fi
     install_prereqs
 }
 
