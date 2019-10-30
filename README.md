@@ -1,6 +1,6 @@
 # project_colfax
 
-##Pre-Reqs
+## Pre-Reqs
 Pre-Reqs are checked in the script and will prompt for install if not met. The list is below.
 - git
 - jq
