@@ -51,7 +51,9 @@ main() {
 }
 
 branch="master"
-[ ! $0 ] && echo "Missing tags" && exit 1
+echo $0
+echo $1
+[ $# -le 0 ] && echo "Missing tags" && exit 1
 tags=$0
 [ $1 ] && branch=$1
 main
