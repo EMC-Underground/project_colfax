@@ -412,6 +412,12 @@ concourse_login() {
     done
 }
 
+fly_sync() {
+    printf "${cyan}Syncing the fly cli.... ${reset}"
+    fly --target main sync
+    success
+}
+
 set_swarm_pipeline() {
     concourse_login
     printf "${cyan}Creating build pipeline.... ${reset}"
@@ -495,6 +501,8 @@ concourse_setup() {
     generate_keys
     deploy_concourse
     build_pipeline
+    concourse_login
+    fly_sync
     set_swarm_pipeline
 }
 
