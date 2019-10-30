@@ -37,6 +37,7 @@ apt_steps() {
 }
 
 install_prereqs() {
+    echo "curl https://raw.githubusercontent.com/EMC-Underground/project_colfax/${branch}/playbook.yml -o /tmp/playbook.yml >/dev/null 2>&1"
     curl https://raw.githubusercontent.com/EMC-Underground/project_colfax/${branch}/playbook.yml -o /tmp/playbook.yml >/dev/null 2>&1
     ansible-playbook /tmp/playbook.yml -tags $tags
 }
@@ -51,9 +52,9 @@ main() {
 }
 
 branch="master"
-echo $0
-echo $1
-[ $# -le 0 ] && echo "Missing tags" && exit 1
+echo "Arg0 ${0}"
+echo "Arg1 ${1}"
+[ $# -lt 0 ] && echo "Missing tags" && exit 1
 tags=$0
 [ $1 ] && branch=$1
 main
