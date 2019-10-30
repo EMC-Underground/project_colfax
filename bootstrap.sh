@@ -162,7 +162,7 @@ pull_repo() {
 
 generate_keys() {
     printf "${cyan}Generating Concourse Keys.... "
-    bash ./keys/generate > /dev/null 2>&1
+    bash /tmp/concourse-docker/keys/generate > /dev/null 2>&1
     success
 }
 
@@ -280,18 +280,18 @@ pipeline_add_job() {
       - get: ${name}_repo
       - task: deploy_${name}
         file: ${name}_repo/task/task.yml"
-    echo -e "${resource}\n$(cat pipeline.yml)" > pipeline.yml
-    echo -e "${job}\n" >> pipeline.yml
+    echo -e "${resource}\n$(cat /tmp/pipeline.yml)" > /tmp/pipeline.yml
+    echo -e "${job}\n" >> /tmp/pipeline.yml
 }
 
 build_pipeline() {
     printf "${cyan}Creating pipeline definition.... ${reset}"
-    echo -e "jobs:" > pipeline.yml
+    echo -e "jobs:" > /tmp/pipeline.yml
     pipeline_add_job "swarm" "https://github.com/EMC-Underground/ansible_install_dockerswarm" "dev"
     pipeline_add_job "concourse" "https://github.com/EMC-Underground/service_concourse" "master"
-    echo -e "resources:\n$(cat pipeline.yml)" > pipeline.yml
-    echo -e "---\n$(cat pipeline.yml)" > pipeline.yml
-    [ -f pipeline.yml ]
+    echo -e "resources:\n$(cat /tmp/pipeline.yml)" > /tmp/pipeline.yml
+    echo -e "---\n$(cat /tmp/pipeline.yml)" > /tmp/pipeline.yml
+    [ -f /tmp/pipeline.yml ]
     success
 }
 
@@ -464,6 +464,20 @@ software_pre_reqs() {
     printf "\n${green}All Pre-Reqs met!${reset}\n\n"
 }
 
+print_finale() {
+    printf "${blue}################### ${magenta}VAULT INFO #####################\n"
+    printf "${blue}##              ${magenta}URL: ${green}http://${DNS_URL}:8200\n"
+    printf "${blue}##       ${magenta}Root Token: ${green}${roottoken}\n"
+    printf "${blue}##  ${magenta}Concourse Token: ${green}${token}\n"
+    printf "${blue}####################################################\n"
+    printf "\n"
+    printf "${blue}################# ${magenta}CONCOURSE INFO ###################\n"
+    printf "${blue}##              ${magenta}URL: ${green}http://${DNS_URL}:8080\n"
+    printf "${blue}##             ${magenta}User: ${green}test\n"
+    printf "${blue}##         ${magenta}Password: ${green}test\n"
+    printf "${blue}####################################################${reset}\n"
+}
+
 main() {
     print_title
     software_pre_reqs
@@ -493,6 +507,7 @@ main() {
     create_vault_secret "concourse/main/build/" "server_list" $server_list
     build_pipeline
     set_swarm_pipeline
+    print_finale
     echo "${cyan}Vault Concourse Key: ${green}${token}${reset}"
     echo "${cyan}Vault Root Key: ${green}${roottoken}${reset}"
     echo "${cyan}Concourse URL: ${green}http://$DNS_URL:8080${reset}"
