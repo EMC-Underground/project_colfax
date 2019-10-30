@@ -15,7 +15,7 @@ min_vv="1.2.3"
 min_fv="5.5.1"
 min_jv="1.5"
 min_gv="1.5"
-app_version="v0.4.2"
+app_version="v0.4.3"
 failed_software=()
 
 function version { echo "$@" | awk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'; }
@@ -465,17 +465,17 @@ software_pre_reqs() {
 }
 
 print_finale() {
-    printf "${blue}################### ${magenta}VAULT INFO #####################\n"
+    printf "${blue}###################### ${magenta}VAULT INFO ${blue}########################\n"
     printf "${blue}##              ${magenta}URL: ${green}http://${DNS_URL}:8200\n"
     printf "${blue}##       ${magenta}Root Token: ${green}${roottoken}\n"
     printf "${blue}##  ${magenta}Concourse Token: ${green}${token}\n"
-    printf "${blue}####################################################\n"
+    printf "${blue}##########################################################\n"
     printf "\n"
-    printf "${blue}################# ${magenta}CONCOURSE INFO ###################\n"
+    printf "${blue}#################### ${magenta}CONCOURSE INFO ${blue}######################\n"
     printf "${blue}##              ${magenta}URL: ${green}http://${DNS_URL}:8080\n"
     printf "${blue}##             ${magenta}User: ${green}test\n"
     printf "${blue}##         ${magenta}Password: ${green}test\n"
-    printf "${blue}####################################################${reset}\n"
+    printf "${blue}##########################################################${reset}\n"
 }
 
 main() {
@@ -508,10 +508,6 @@ main() {
     build_pipeline
     set_swarm_pipeline
     print_finale
-    echo "${cyan}Vault Concourse Key: ${green}${token}${reset}"
-    echo "${cyan}Vault Root Key: ${green}${roottoken}${reset}"
-    echo "${cyan}Concourse URL: ${green}http://$DNS_URL:8080${reset}"
-    echo "${cyan}Vault URL: ${green}http://$DNS_URL:8200${reset}"
     printf "${cyan}Here are your server(s): ${reset}"
     echo "${green}${server_list[*]}${reset}"
 }
