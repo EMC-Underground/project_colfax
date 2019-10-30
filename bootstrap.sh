@@ -247,23 +247,23 @@ vault_init() {
 }
 
 vault_unseal() {
-    printf "${cyan}Unsealing the vault.... "
+    printf "${cyan}Unsealing the vault.... ${reset}"
     vault operator unseal -address=http://localhost:8200 $1 > /dev/null 2>&1
     success
 }
 
 vault_create_store() {
-    printf "${cyan}Creating vault secret store.... "
+    printf "${cyan}Creating vault secret store.... ${reset}"
     vault secrets enable -address=http://localhost:8200 -version=1 -path=concourse kv > /dev/null 2>&1
     success
 }
 
 vault_create_policy() {
-    printf "${cyan}Create vault policy.... "
+    printf "${cyan}Create vault policy.... ${reset}"
     echo 'path "concourse/*" {
   policy = "read"
-}' >> /tmp/concourse-policy.hcl
-    vault policy write -address=http://localhost:8200 concourse /tmp/concourse-policy.hcl
+}' > /tmp/concourse-policy.hcl
+    vault policy write -address=http://localhost:8200 concourse /tmp/concourse-policy.hcl > /dev/null 2>&1
     success
 }
 
@@ -432,15 +432,6 @@ capture_ntp_server() {
     read result
     if [ "$result" == "" ]; then result="0.us.pool.ntp.org"; fi
     eval $__resultvar="'$result'"
-}
-
-vault_create_policy() {
-    printf "${cyan}Create vault policy.... "
-    echo 'path "concourse/*" {
-  policy = "read"
-}' >> concourse-policy.hcl
-    vault policy write -address=http://localhost:8200 concourse /tmp/concourse-policy.hcl > /dev/null 2>&1
-    success
 }
 
 print_title() {
