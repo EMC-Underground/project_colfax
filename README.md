@@ -1,18 +1,10 @@
-# project_colfax
+# Project Colfax
+Automation with a single command
 
-## Pre-Reqs
-Pre-Reqs are checked in the script and will prompt for install if not met. The list is below.
-- git
-- jq
-- docker
-- docker-compose
-- vault cli
-- fly cli
-
-## To deploy
+## Deploy
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bootstrap.sh)"
 
-## To destroy bootstrap environment
+## Destroy
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bootstrap.sh)" destroy
 
 ## About
@@ -27,3 +19,12 @@ platform. By default the platform will deploy the following technologies.
 - Time Series Database | [influxdb](https://www.influxdata.com/)
 - Storage API
 - Collector Engine | [overlord](https://github.com/nctiggy/collector-overlord)
+
+## Pre-Reqs
+Pre-Reqs are checked in the script and will prompt for install if not met. The list is below.
+- git
+- jq
+- docker
+- docker-compose
+- vault cli
+- fly cli
