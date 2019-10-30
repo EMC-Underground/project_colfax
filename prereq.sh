@@ -3,11 +3,11 @@
 yum_checks() {
     local tool="yum"
     local __resultvar=$1
-    local result="false"
+    local result=1
     command -v $tool > /dev/null 2>&1
     if [ $? -eq 0 ]
     then
-        result="true"
+        result=0
     fi
     eval $__resultvar="'$result'"
 }
@@ -15,11 +15,11 @@ yum_checks() {
 apt_checks() {
     local tool="apt-get"
     local __resultvar=$1
-    local result="false"
+    local result=1
     command -v $tool > /dev/null 2>&1
     if [ $? -eq 0 ]
     then
-        result="true"
+        result=0
     fi
     eval $__resultvar="'$result'"
 }
@@ -45,8 +45,8 @@ main() {
     local yum apt
     yum_checks $yum
     apt_checks $apt
-    if [ $yum = "true" ] ; then yum_steps ; fi
-    if [ $apt = "true" ] ; then apt_steps ; fi
+    if [ $yum == "0" ] ; then yum_steps ; fi
+    if [ $apt == "0" ] ; then apt_steps ; fi
     install_prereqs
 }
 
