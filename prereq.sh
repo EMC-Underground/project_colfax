@@ -25,8 +25,8 @@ apt_checks() {
 }
 
 yum_steps() {
-        sudo yum -y install epel-release > /dev/null 2>&1
-        sudo yum -y install ansible > /dev/null 2>&1
+    sudo yum -y install epel-release > /dev/null 2>&1
+    sudo yum -y install ansible > /dev/null 2>&1
 }
 
 apt_steps() {
@@ -45,8 +45,8 @@ main() {
     local yum apt
     yum_checks $yum
     apt_checks $apt
-    if [ "$yum" = "true" ] ; then yum_steps ; fi
-    if [ "$apt" = "true" ] ; then apt_steps ; fi
+    if [ $yum = "true" ] ; then yum_steps ; fi
+    if [ $apt = "true" ] ; then apt_steps ; fi
     install_prereqs
 }
 
