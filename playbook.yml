@@ -41,6 +41,7 @@
     unarchive:
       src: "https://github.com/concourse/concourse/releases/download/v{{ fly_version }}/fly-{{ fly_version }}-linux-amd64.tgz"
       dest: /usr/local/bin/
+      remote_src: yes
       keep_newer: no
       mode: 'u+x,g+x'
     tags:
