@@ -26,4 +26,4 @@ platform. By default the platform will deploy the following technologies.
 - Dashboard | [grafana](https://grafana.com/)
 - Time Series Database | [influxdb](https://www.influxdata.com/)
 - Storage API
-- Collector Engine [overlord](https://github.com/nctiggy/collector-overlord)
+- Collector Engine | [overlord](https://github.com/nctiggy/collector-overlord)
