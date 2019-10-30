@@ -434,13 +434,13 @@ capture_ntp_server() {
     eval $__resultvar="'$result'"
 }
 
+function join_by { local IFS="$1"; shift; echo "$*"; }
+
 print_title() {
     printf "${blue}---==Project Colfax ${app_version}==---\n"
     printf "This project is aimed to deploy a Dell Tech Automation Platform\n"
     printf "Please report issues to https://github.com/EMC-Underground/project_colfax${reset}\n\n"
 }
-
-function join_by { local IFS="$1"; shift; echo "$*"; }
 
 software_pre_reqs() {
     versions=0
@@ -464,6 +464,40 @@ software_pre_reqs() {
     printf "\n${green}All Pre-Reqs met!${reset}\n\n"
 }
 
+capture_data() {
+    capture_num_servers num_servers
+    capture_server_ips server_list $num_servers
+    capture_username user_name
+    capture_password password
+    capture_ntp_server ntp_server
+}
+
+vault_setup() {
+    pull_repo "https://github.com/EMC-Underground/vault-consul-docker.git"
+    build_deploy_vault
+    vault_init keys
+    unseal=`echo $keys | jq -r .unseal_keys_b64[0]`
+    roottoken=`echo $keys | jq -r .root_token`
+    vault_unseal $unseal
+    vault_login $roottoken
+    vault_create_store
+    vault_create_policy
+    vault_create_token token
+    export VAULT_CLIENT_TOKEN=$token
+    create_vault_secret "concourse/main/build/" "password" $password
+    create_vault_secret "concourse/main/build/" "user_name" $user_name
+    create_vault_secret "concourse/main/build/" "ntp_server" $ntp_server
+    create_vault_secret "concourse/main/build/" "server_list" $server_list
+}
+
+concourse_setup() {
+    pull_repo "https://github.com/EMC-Underground/concourse-docker.git"
+    generate_keys
+    deploy_concourse
+    build_pipeline
+    set_swarm_pipeline
+}
+
 print_finale() {
     printf "${blue}###################### ${magenta}VAULT INFO ${blue}########################\n"
     printf "${blue}##              ${magenta}URL: ${green}http://${DNS_URL}:8200\n"
@@ -480,40 +514,17 @@ print_finale() {
     printf "${blue}#################### ${magenta}SWARM INFO ${blue}######################\n"
     printf "${blue}##              ${magenta}If running from a remote CLI\n"
     printf "${blue}##              ${green}export DOCKER_HOST=${server_list[0]}\n"
-    printf "${blue}##             ${magenta}Proxy URL: https://proxy.${server_list}.xip.io\n"
+    printf "${blue}##             ${magenta}Proxy URL: ${green}https://proxy.${server_list[0]}.xip.io\n"
     printf "${blue}##########################################################${reset}\n"
 }
 
 main() {
     print_title
     software_pre_reqs
-    capture_num_servers num_servers
-    capture_server_ips server_list $num_servers
-    capture_username user_name
-    capture_password password
-    capture_ntp_server ntp_server
+    capture_data
     build_docker_network
-    pull_repo "https://github.com/EMC-Underground/vault-consul-docker.git"
-    build_deploy_vault
-    vault_init keys
-    unseal=`echo $keys | jq -r .unseal_keys_b64[0]`
-    roottoken=`echo $keys | jq -r .root_token`
-    vault_unseal $unseal
-    vault_login $roottoken
-    vault_create_store
-    vault_create_policy
-    vault_create_token token
-    pull_repo "https://github.com/EMC-Underground/concourse-docker.git"
-    generate_keys
-    export VAULT_CLIENT_TOKEN=$token
-    deploy_concourse
-    create_vault_secret "concourse/main/build/" "password" $password
-    create_vault_secret "concourse/main/build/" "user_name" $user_name
-    create_vault_secret "concourse/main/build/" "ntp_server" $ntp_server
-    create_vault_secret "concourse/main/build/" "server_list" $server_list
-    build_pipeline
-    set_swarm_pipeline
-    print_finale
+    vault_setup
+    concourse_setup
 }
 
 case "$0" in
@@ -529,3 +540,4 @@ esac
 
 main
 cleanup
+print_finale
