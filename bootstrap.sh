@@ -467,12 +467,12 @@ software_pre_reqs() {
         IFS=","
         case $install in
             "y"|"yes")
-                sh -c "$(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh)" ${failed_software[*]} dev
+                bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) ${failed_software[*]} dev
                 ;;
             "n"|"no")
                 printf "${green}This command will run an Ansible Playbook to install\n"
                 printf "all pre-requisite software (inc. Ansible)\n\n"
-                echo "sh -c \"\$(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh)\" ${failed_software[*]} dev"
+                echo "bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) ${failed_software[*]} dev"
                 ;;
         esac
         exit 1
