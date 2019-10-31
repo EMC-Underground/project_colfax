@@ -450,6 +450,7 @@ print_title() {
 
 software_pre_reqs() {
     versions=0
+    local install
     git_checks
     docker_checks
     docker_compose_checks
@@ -461,10 +462,19 @@ software_pre_reqs() {
     if [ $versions -eq 1 ]
     then
         printf "${red}\n##### Pre-Reqs not met! #####${reset}\n\n"
-        printf "${green}This command will run an Ansible Playbook to install\n"
-        printf "all pre-requisite software (inc. Ansible)\n\n"
-        IFS=","
-        echo "${failed_software[*]}"
+        printf "Install pre-reqs? [y/n]: "
+        read install
+        case $install in
+            "y"|"yes")
+                sh -c "$(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh)" ${failed_software[*]} dev
+                ;;
+            "n"|"no")
+                printf "${green}This command will run an Ansible Playbook to install\n"
+                printf "all pre-requisite software (inc. Ansible)\n\n"
+                IFS=","
+                echo "sh -c \"\$(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh)\" ${failed_software[*]} dev"
+                ;;
+        esac
         exit 1
     fi
     printf "\n${green}All Pre-Reqs met!${reset}\n\n"
@@ -502,7 +512,6 @@ concourse_setup() {
     deploy_concourse
     build_pipeline
     concourse_login
-    fly_sync
     set_swarm_pipeline
 }
 
