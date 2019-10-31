@@ -30,21 +30,21 @@
     tags:
       - vault
 
-  - name: "Download lastest stable version of docker-compose"
+  - name: "Install docker-compose"
     get_url:
       url: "https://github.com/docker/compose/releases/download/1.24.1/docker-compose-{{ ansible_system }}-{{ ansible_userspace_architecture }}"
       dest: /usr/local/bin/docker-compose
-      mode: 'u+x,g+x'
+      mode: 755
     tags:
       - docker-compose
 
-  - name: "Unzip the Fly tgz file"
+  - name: "Installing fly"
     unarchive:
       src: "https://github.com/concourse/concourse/releases/download/v{{ fly_version }}/fly-{{ fly_version }}-linux-amd64.tgz"
       dest: /usr/local/bin/
       remote_src: yes
       keep_newer: no
-      mode: 'u+x,g+x'
+      mode: 755
     tags:
       - fly
 
@@ -52,22 +52,17 @@
     get_url:
       url: "https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64"
       dest: /usr/local/bin/jq
-      mode: 'u+x,g+x'
+      mode: 755
     tags:
       - jq
 
-  - name: "Download lastest stable version of vault cli"
-    get_url:
-      url: "https://releases.hashicorp.com/vault/1.2.3/vault_1.2.3_linux_amd64.zip"
-      dest: /tmp
-    tags:
-      - vault
-
   - name: "Install vault cli"
     unarchive:
-      src: /tmp/vault_1.2.3_linux_amd64.zip
+      src: "https://releases.hashicorp.com/vault/1.2.3/vault_1.2.3_linux_amd64.zip"
       dest: /usr/local/bin/
-      mode: 'u+x,g+x'
+      remote_src: yes
+      keep_newer: no
+      mode: 755
     tags:
       - vault
 
