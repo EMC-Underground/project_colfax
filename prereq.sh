@@ -70,6 +70,10 @@ main() {
 }
 
 branch="master"
+for var in $@
+do
+    echo $var
+done
 tags=( "fly" "docker" "docker-compose" "vault" "git" "kernel" "jq" )
 [ $2 ] && branch="dev"
 install_tags=$1
