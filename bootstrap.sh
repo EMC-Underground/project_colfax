@@ -544,7 +544,7 @@ main() {
     concourse_setup
 }
 
-case "$0" in
+case "$1" in
     "destroy")
         print_title
         cleanup

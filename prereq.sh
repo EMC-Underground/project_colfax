@@ -39,9 +39,8 @@ apt_steps() {
 install_prereqs() {
     echo "curl https://raw.githubusercontent.com/EMC-Underground/project_colfax/${branch}/playbook.yml -o /tmp/playbook.yml"
     curl https://raw.githubusercontent.com/EMC-Underground/project_colfax/${branch}/playbook.yml -o /tmp/playbook.yml > /dev/null 2>&1
-    IFS=","
-    echo "ansible-playbook /tmp/playbook.yml --tags ${install_tags[*]}"
-    ansible-playbook /tmp/playbook.yml --tags ${install_tags[*]}
+    echo "ansible-playbook /tmp/playbook.yml --tags ${install_tags}"
+    ansible-playbook /tmp/playbook.yml --tags $install_tags
 }
 
 cleanup() {
@@ -49,9 +48,11 @@ cleanup() {
 }
 
 get_args() {
-    for arg in "$@"
+    local var
+    for var in "$@"
     do
-        if [[ " ${tags[@]} " =~ " ${arg} " ]]
+        echo $var
+        if [[ " ${tags[@]} " =~ " ${var} " ]]
         then
             [ ! $arg == "dev" ] && install_tags=( "${install_tags[@]}" "${arg}" )
             [ $arg == "dev" ] && branch="dev"
@@ -70,7 +71,7 @@ main() {
 
 branch="master"
 tags=( "fly" "docker" "docker-compose" "vault" "git" "kernel" "jq" )
-install_tags=()
-get_args
+[ $2 ] && branch="dev"
+install_tags=$1
 main
 cleanup
