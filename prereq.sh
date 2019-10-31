@@ -40,6 +40,7 @@ install_prereqs() {
     echo "curl https://raw.githubusercontent.com/EMC-Underground/project_colfax/${branch}/playbook.yml -o /tmp/playbook.yml"
     curl https://raw.githubusercontent.com/EMC-Underground/project_colfax/${branch}/playbook.yml -o /tmp/playbook.yml > /dev/null 2>&1
     IFS=","
+    echo "ansible-playbook /tmp/playbook.yml --tags ${install_tags[*]}"
     ansible-playbook /tmp/playbook.yml --tags ${install_tags[*]}
 }
 
