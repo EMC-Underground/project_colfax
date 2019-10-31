@@ -4,10 +4,10 @@ Automation with a single command
 Curated and managed through CI/CD
 
 ## Deploy
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bootstrap.sh)"
+curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bootstrap.sh | bash -s
 
 ## Destroy
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bootstrap.sh)" destroy
+curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bootstrap.sh | bash -s destroy
 
 ## About
 This project is designed to allow teams to quickly stand up an automation
