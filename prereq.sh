@@ -30,10 +30,11 @@ yum_steps() {
 }
 
 apt_steps() {
-    sudo apt update
-    sudo apt -y install software-properties-common
-    sudo apt-add-repository --yes --update ppa:ansible/ansible
-    sudo apt -y install ansible
+    printf "Installing ansible.... "
+    sudo apt update > /dev/null 2>&1
+    sudo apt -y install software-properties-common > /dev/null 2>&1
+    sudo apt-add-repository --yes --update ppa:ansible/ansible > /dev/null 2>&1
+    sudo apt -y install ansible > /dev/null 2>&1
 }
 
 install_prereqs() {
