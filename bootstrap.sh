@@ -66,15 +66,12 @@ success() {
 }
 
 success_version() {
-    local curr_ver=$1 req_ver=$2 tool=$3
-    if [ "$(version ${curr_ver})" -ge "$(version ${req_ver})" ]
-    then
-        print_version $curr_ver "good" $req_ver
-    else
-        print_version $curr_ver "bad" $req_ver
-        versions=1
-        failed_software=( "${failed_software[@]}" "${tool}" )
-    fi
+    local curr_int=$(version $1) req_int=$(version $2) tool=$3 good=1 re='^[0-9]+$'
+    local curr_ver=$1 req_ver=$2
+    [ $curr_int -ge $req_int ] && good=0
+    if ! [[ $curr_int =~ $re ]] ; then curr_ver=0 && good=1 ; fi
+    [ $good -eq 0 ] && print_version $curr_ver "good" $req_ver
+    [ $good -ne 0 ] && print_version $curr_ver "bad" $req_ver && versions=1 && failed_software=( "${failed_software[@]}" "${tool}" )
 }
 
 docker_checks() {
@@ -96,7 +93,7 @@ docker_compose_checks() {
     command -v $tool > /dev/null 2>&1
     if [ $? -eq 0 ]
     then
-        dcv=`$tool version | awk -F'[, ]' 'NR==1 {print $3}' > /dev/null`
+        dcv=`$tool version | awk -F'[, ]' 'NR==1 {print $3}'`
     fi
     success_version $dcv $min_dcv $tool
 }
