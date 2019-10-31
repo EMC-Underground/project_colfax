@@ -10,6 +10,7 @@
     package:
       name: '*'
       state: latest
+    ignore_errors: yes
     tags:
       - kernel
       - git
