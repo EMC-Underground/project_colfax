@@ -475,7 +475,7 @@ software_pre_reqs() {
                 echo "bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) ${failed_software[*]} dev"
                 ;;
         esac
-        exit 1
+        exit 0
     fi
     printf "\n${green}All Pre-Reqs met!${reset}\n\n"
 }
