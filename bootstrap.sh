@@ -96,7 +96,7 @@ docker_compose_checks() {
     command -v $tool > /dev/null 2>&1
     if [ $? -eq 0 ]
     then
-        dcv=`$tool version | awk -F'[, ]' 'NR==1 {print $3}'`
+        dcv=`$tool version | awk -F'[, ]' 'NR==1 {print $3}' > /dev/null`
     fi
     success_version $dcv $min_dcv $tool
 }
