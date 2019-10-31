@@ -1,5 +1,27 @@
 #!/bin/bash
 
+red=`tput setaf 1`
+green=`tput setaf 2`
+reset=`tput sgr0`
+
+print_check() {
+    printf "${green}${check}\n${reset}"
+}
+
+print_cross() {
+    printf "${red}${cross}\n${reset}"
+}
+
+success() {
+    if [ $? -eq 0 ]
+    then
+        print_check
+    else
+        print_cross
+        exit 1
+    fi
+}
+
 yum_checks() {
     local tool="yum"
     local __resultvar=$1
@@ -25,39 +47,30 @@ apt_checks() {
 }
 
 yum_steps() {
+    printf "${cyan}Installing ansible.... ${reset}"
     sudo yum -y install epel-release > /dev/null 2>&1
     sudo yum -y install ansible > /dev/null 2>&1
+    success
 }
 
 apt_steps() {
-    printf "Installing ansible.... "
+    printf "${cyan}Installing ansible.... ${reset}"
     sudo apt update > /dev/null 2>&1
     sudo apt -y install software-properties-common > /dev/null 2>&1
     sudo apt-add-repository --yes --update ppa:ansible/ansible > /dev/null 2>&1
     sudo apt -y install ansible > /dev/null 2>&1
+    success
 }
 
 install_prereqs() {
+    printf "${cyan}Running pre-req install playbook.... ${reset}"
     curl https://raw.githubusercontent.com/EMC-Underground/project_colfax/${branch}/playbook.yml -o /tmp/playbook.yml > /dev/null 2>&1
-    echo "ansible-playbook /tmp/playbook.yml --tags ${install_tags}"
-    ansible-playbook /tmp/playbook.yml --tags $install_tags
+    ansible-playbook /tmp/playbook.yml --tags $install_tags > /dev/null 2>&1
+    success
 }
 
 cleanup() {
     [ -f /tmp/playbook.yml ] && rm /tmp/playbook.yml > /dev/null 2>&1
-}
-
-get_args() {
-    local var
-    for var in "$@"
-    do
-        echo $var
-        if [[ " ${tags[@]} " =~ " ${var} " ]]
-        then
-            [ ! $arg == "dev" ] && install_tags=( "${install_tags[@]}" "${arg}" )
-            [ $arg == "dev" ] && branch="dev"
-        fi
-    done
 }
 
 main() {
@@ -70,12 +83,7 @@ main() {
 }
 
 branch="master"
-for var in $@
-do
-    echo $var
-done
-tags=( "fly" "docker" "docker-compose" "vault" "git" "kernel" "jq" )
-[ $2 ] && branch="dev"
+[ $2 ] && branch=$2
 install_tags=$1
 main
 cleanup

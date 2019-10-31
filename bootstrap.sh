@@ -78,7 +78,7 @@ docker_checks() {
     local tool="docker"
     local dv=0
     printf "${cyan}Checking ${tool} version.... "
-    command -v $tool > /dev/null 2>&1
+    command -v $tool > /dev/null 2>&1 && [ -x $(command -v $tool) ]
     if [ $? -eq 0 ]
     then
         dv=`${tool} --version | awk -F'[, ]' '{print $3}'`
@@ -90,7 +90,7 @@ docker_compose_checks() {
     local tool="docker-compose"
     local dcv=0
     printf "${cyan}Checking ${tool} version.... "
-    command -v $tool > /dev/null 2>&1
+    command -v $tool > /dev/null 2>&1 && [ -x $(command -v $tool) ]
     if [ $? -eq 0 ]
     then
         dcv=`$tool version | awk -F'[, ]' 'NR==1 {print $3}'`
@@ -102,7 +102,7 @@ vault_checks() {
     local tool="vault"
     local vv=0
     printf "${cyan}Checking ${tool} version.... "
-    command -v $tool > /dev/null 2>&1
+    command -v $tool > /dev/null 2>&1 && [ -x $(command -v $tool) ]
     if [ $? -eq 0 ]
     then
         vv=`vault -v | awk '{print substr($2,2)}'`
@@ -114,7 +114,7 @@ jq_checks() {
     local tool="jq"
     local jv=0
     printf "${cyan}Checking ${tool} version.... "
-    command -v $tool > /dev/null 2>&1
+    command -v $tool > /dev/null 2>&1 && [ -x $(command -v $tool) ]
     if [ $? -eq 0 ]
     then
         jv=`jq --version | awk -F- '{print $2}'`
@@ -126,7 +126,7 @@ fly_checks() {
     local tool="fly"
     local fv=0
     printf "${cyan}Checking ${tool} version.... "
-    command -v $tool > /dev/null 2>&1
+    command -v $tool > /dev/null 2>&1 && [ -x $(command -v $tool) ]
     if [ $? -eq 0 ]
     then
         fv=`fly --version`
@@ -138,7 +138,7 @@ git_checks() {
     local tool="git"
     local gv=0
     printf "${cyan}Checking ${tool} version.... "
-    command -v $tool > /dev/null 2>&1
+    command -v $tool > /dev/null 2>&1 && [ -x $(command -v $tool) ]
     if [ $? -eq 0 ]
     then
         gv=`git --version | awk '{print $NF}'`

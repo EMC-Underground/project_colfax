@@ -17,7 +17,7 @@
       - vault
 
   - name: "Installing Git"
-    package: pkg={{ item }} state=installed
+    package: pkg={{ item }} state=present
     with_items:
       - git
     ignore_errors: yes
@@ -25,7 +25,7 @@
       - git
 
   - name: "Installing unzip"
-    package: pkg={{ item }} state=installed
+    package: pkg={{ item }} state=present
     with_items:
       - unzip
     ignore_errors: yes
