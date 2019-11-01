@@ -3,10 +3,10 @@
 # Set Color Variables
 red=`tput setaf 1`
 green=`tput setaf 2`
+reset=`tput sgr0`
 cyan=`tput setaf 6`
 blue=`tput setaf 4`
 magenta=`tput setaf 5`
-reset=`tput sgr0`
 check="\xE2\x9C\x94"
 cross="\xE2\x9C\x98"
 min_dv="18.09"
@@ -458,16 +458,16 @@ software_pre_reqs() {
     [ $kernel_version -lt 4 ] && failed_software=( "${failed_software[@]}" "kernel" )
     if [ $versions -eq 1 ]
     then
-        printf "${red}\n##### Pre-Reqs not met! #####${reset}\n\n"
+        printf "${red}\n################### Pre-Reqs not met! ##################${reset}\n\n"
         printf "Install pre-reqs? [y/n]: "
         read install
         IFS=","
         case $install in
             "y"|"yes")
                 [ $kernel_version -lt 4 ] && echo "Kernel update required. \
-                    This machine will reboot after pre-req's are isntalled"
-                echo "bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) ${failed_software[*]} dev"
+                    This machine will reboot after pre-req's are isntalled\n"
                 bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) "${failed_software[*]}" dev
+                echo "\n${cyan}Running pre-req install script:${reset}"
                 ;;
             "n"|"no")
                 printf "${green}This command will run an Ansible Playbook to install\n"
