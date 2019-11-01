@@ -66,7 +66,6 @@ apt_steps() {
 
 install_prereqs() {
     printf "${cyan}Running pre-req install playbook.... ${reset}"
-    echo "curl https://raw.githubusercontent.com/EMC-Underground/project_colfax/${branch}/playbook.yml -o /tmp/playbook.yml"
     curl https://raw.githubusercontent.com/EMC-Underground/project_colfax/${branch}/playbook.yml -o /tmp/playbook.yml > /dev/null 2>&1
     ansible-playbook /tmp/playbook.yml --tags $install_tags
     success
@@ -90,3 +89,4 @@ install_tags=$1
 [ $2 ] && branch=$2
 main
 cleanup
+echo "Please re-run now that pre-reqs are all met"
