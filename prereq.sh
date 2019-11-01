@@ -85,6 +85,8 @@ main() {
 }
 
 branch="master"
+echo "Arg1 = ${1}"
+echo "Arg2 = ${2}"
 [ $2 ] && branch=$2
 install_tags=$1
 main
