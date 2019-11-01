@@ -3,6 +3,8 @@
 red=`tput setaf 1`
 green=`tput setaf 2`
 reset=`tput sgr0`
+check="\xE2\x9C\x94"
+cross="\xE2\x9C\x98"
 
 print_check() {
     printf "${green}${check}\n${reset}"
