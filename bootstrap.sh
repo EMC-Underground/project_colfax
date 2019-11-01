@@ -422,7 +422,6 @@ fly_sync() {
 }
 
 set_swarm_pipeline() {
-    concourse_login
     printf "${cyan}Creating build pipeline.... ${reset}"
     fly --target main set-pipeline -p build -c /tmp/pipeline.yml -n > /dev/null
     success
