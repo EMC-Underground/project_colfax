@@ -472,8 +472,6 @@ software_pre_reqs() {
             "y"|"yes")
                 [ $kernel_version -lt 4 ] && echo "Kernel update required. \
                     This machine will reboot after pre-req's are isntalled\n"
-                echo "bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) ${failed_software[*]} dev"
-                echo "${cyan}Running pre-req install script:${reset}"
                 bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) ${failed_software[*]} dev
                 ;;
             "n"|"no")
@@ -489,7 +487,7 @@ software_pre_reqs() {
 
 capture_data() {
     capture_num_servers num_servers
-    [ ${#server_list[@]} -ne 0 ] && capture_server_ips server_list $num_servers
+    [ ${#server_list[@]} -eq 0 ] && input_server_ips server_list $num_servers
     capture_username user_name
     capture_password password
     capture_ntp_server ntp_server
@@ -551,7 +549,7 @@ main() {
     concourse_setup
 }
 
-
+server_list=()
 for arg in $@
 do
     case $arg in
