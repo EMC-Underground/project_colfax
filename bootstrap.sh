@@ -34,7 +34,8 @@ print_check() {
 }
 
 print_version() {
-    case $2 in
+    local status=$2
+    case $status in
         good)
             printf "${green}${1}\n${reset}"
             ;;
@@ -328,7 +329,7 @@ capture_num_servers() {
     eval $__resultvar="'$result'"
 }
 
-capture_server_ips() {
+input_server_ips() {
     printf "${magenta}Enter server IP addresses\n"
     local __resultvar=$1
     local i=0
@@ -349,6 +350,11 @@ capture_server_ips() {
     done
     local result=$(join_by , "${servers[@]}")
     eval $__resultvar="'$result'"
+}
+
+capture_server_ips() {
+    local list=()
+    echo "test"
 }
 
 capture_username() {
@@ -466,8 +472,9 @@ software_pre_reqs() {
             "y"|"yes")
                 [ $kernel_version -lt 4 ] && echo "Kernel update required. \
                     This machine will reboot after pre-req's are isntalled\n"
-                bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) "${failed_software[*]}" dev
-                echo "\n${cyan}Running pre-req install script:${reset}"
+                echo "bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) ${failed_software[*]} dev"
+                echo "${cyan}Running pre-req install script:${reset}"
+                bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) ${failed_software[*]} dev
                 ;;
             "n"|"no")
                 printf "${green}This command will run an Ansible Playbook to install\n"
@@ -482,7 +489,7 @@ software_pre_reqs() {
 
 capture_data() {
     capture_num_servers num_servers
-    capture_server_ips server_list $num_servers
+    [ ${#server_list[@]} -ne 0 ] && capture_server_ips server_list $num_servers
     capture_username user_name
     capture_password password
     capture_ntp_server ntp_server
@@ -544,16 +551,22 @@ main() {
     concourse_setup
 }
 
-case "$1" in
-    "destroy")
-        print_title
-        cleanup
-        destroy
-        exit 0
-        ;;
-    *)
-        ;;
-esac
+
+for arg in $@
+do
+    case $arg in
+        "destroy"|"--destroy"|"-d")
+            print_title
+            cleanup
+            destroy
+            exit 0
+            ;;
+        "servers"|"--servers"|"-s")
+            ;;
+        *)
+            ;;
+    esac
+done
 
 main
 cleanup
