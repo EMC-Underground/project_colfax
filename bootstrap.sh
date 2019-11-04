@@ -3,17 +3,20 @@
 # Set Color Variables
 red=`tput setaf 1`
 green=`tput setaf 2`
-cyan=`tput setaf 6`
-magenta=`tput setaf 5`
 reset=`tput sgr0`
+cyan=`tput setaf 6`
+blue=`tput setaf 4`
+magenta=`tput setaf 5`
 check="\xE2\x9C\x94"
 cross="\xE2\x9C\x98"
 min_dv="18.09"
 min_dcv="1.24"
 min_vv="1.2.3"
-min_fv="5.5.1"
+min_fv="5.6.0"
 min_jv="1.5"
 min_gv="1.5"
+app_version="v0.4.3"
+failed_software=()
 
 function version { echo "$@" | awk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'; }
 
@@ -31,20 +34,24 @@ print_check() {
 }
 
 print_version() {
-    case $2 in
+    local status=$2
+    case $status in
         good)
             printf "${green}${1}\n${reset}"
             ;;
         bad)
-            printf "${red}${1}\n${reset}"
-            exit 1
+            if [ $1 == "0" ]
+            then
+                printf "${red}Not Installed | minimum ver. ${3}\n${reset}"
+            else
+                printf "${red}${1} | minimum ver. ${3}\n${reset}"
+            fi
             ;;
     esac
 }
 
 print_cross() {
     printf "${red}${cross}\n${reset}"
-    exit 1
 }
 
 success() {
@@ -53,112 +60,114 @@ success() {
         print_check
     else
         print_cross
+        printf "\n${blue}You may artifacts leftover from a previous run.\n"
+        printf "Try running ${green}\"./bootstrap.sh destroy\"${blue} Then try again${reset}\n"
+        exit 1
     fi
 }
 
 success_version() {
-    if [ "$(version ${1})" -ge "$(version ${2})" ]
-    then
-        print_version $1 "good"
-    else
-        print_version $1 "bad"
-    fi
+    local curr_int=$(version $1) req_int=$(version $2) tool=$3 good=1 re='^[0-9]+$'
+    local curr_ver=$1 req_ver=$2
+    [ $curr_int -ge $req_int ] && good=0
+    if ! [[ $curr_int =~ $re ]] ; then curr_ver=0 && good=1 ; fi
+    [ $good -eq 0 ] && print_version $curr_ver "good" $req_ver
+    [ $good -ne 0 ] && print_version $curr_ver "bad" $req_ver && versions=1 && failed_software=( "${failed_software[@]}" "${tool}" )
 }
 
 docker_checks() {
-    printf "${cyan}Checking docker version.... "
-    command -v docker > /dev/null 2>&1
+    local tool="docker"
+    local dv=0
+    printf "${cyan}Checking ${tool} version.... "
+    command -v $tool > /dev/null 2>&1 && [ -x $(command -v $tool) ]
     if [ $? -eq 0 ]
     then
-        dv=`docker --version | awk -F'[, ]' '{print $3}'`
-        success_version $dv $min_dv
-    else
-        print_cross
+        dv=`${tool} --version | awk -F'[, ]' '{print $3}'`
     fi
+    success_version $dv $min_dv $tool
 }
 
 docker_compose_checks() {
-    printf "${cyan}Checking docker-compose version.... "
-    command -v docker-compose > /dev/null 2>&1
+    local tool="docker-compose"
+    local dcv=0
+    printf "${cyan}Checking ${tool} version.... "
+    command -v $tool > /dev/null 2>&1 && [ -x $(command -v $tool) ]
     if [ $? -eq 0 ]
     then
-        dcv=`docker-compose version | awk -F'[, ]' 'NR==1 {print $3}'`
-        success_version $dcv $min_dcv
-    else
-        print_cross
+        dcv=`$tool version | awk -F'[, ]' 'NR==1 {print $3}'`
     fi
+    success_version $dcv $min_dcv $tool
 }
 
 vault_checks() {
-    printf "${cyan}Checking vault version.... "
-    command -v vault > /dev/null 2>&1
+    local tool="vault"
+    local vv=0
+    printf "${cyan}Checking ${tool} version.... "
+    command -v $tool > /dev/null 2>&1 && [ -x $(command -v $tool) ]
     if [ $? -eq 0 ]
     then
         vv=`vault -v | awk '{print substr($2,2)}'`
-        success_version $vv $min_vv
-    else
-        print_cross
     fi
+    success_version $vv $min_vv $tool
 }
 
 jq_checks() {
-    printf "${cyan}Checking jq version.... "
-    command -v jq > /dev/null 2>&1
+    local tool="jq"
+    local jv=0
+    printf "${cyan}Checking ${tool} version.... "
+    command -v $tool > /dev/null 2>&1 && [ -x $(command -v $tool) ]
     if [ $? -eq 0 ]
     then
         jv=`jq --version | awk -F- '{print $2}'`
-        success_version $jv $min_jv
-    else
-        print_cross
     fi
+    success_version $jv $min_jv $tool
 }
 
 fly_checks() {
-    printf "${cyan}Checking for fly version.... "
-    command -v fly > /dev/null 2>&1
+    local tool="fly"
+    local fv=0
+    printf "${cyan}Checking ${tool} version.... "
+    command -v $tool > /dev/null 2>&1 && [ -x $(command -v $tool) ]
     if [ $? -eq 0 ]
     then
         fv=`fly --version`
-        success_version $fv $min_fv
-    else
-        print_cross
     fi
+    success_version $fv $min_fv $tool
 }
 
 git_checks() {
-    printf "${cyan}Checking for git.... "
-    command -v git > /dev/null 2>&1
+    local tool="git"
+    local gv=0
+    printf "${cyan}Checking ${tool} version.... "
+    command -v $tool > /dev/null 2>&1 && [ -x $(command -v $tool) ]
     if [ $? -eq 0 ]
     then
         gv=`git --version | awk '{print $NF}'`
-        success_version $gv $min_gv
-    else
-        print_cross
     fi
+    success_version $gv $min_gv $tool
 }
 
 pull_repo() {
-    local repo_name=`echo $1 | awk -F'/' '{print $NF}' | awk -F'.' '{print $1}'`
+    local repo_url=$1 repo_name=`echo $1 | awk -F'/' '{print $NF}' | awk -F'.' '{print $1}'`
     printf "${cyan}Cloning ${repo_name} repo.... "
-    if [ ! -d "./${repo_name}" ]
+    if [ -d "/tmp/${repo_name}" ]
     then
-        git clone $1 > /dev/null 2>&1
+        rm /tmp/$repo_name > /dev/null 2>&1
     fi
-    cd ./$repo_name
-    git pull > /dev/null 2>&1
+    git clone $repo_url /tmp/$repo_name > /dev/null 2>&1
     success
 }
 
 generate_keys() {
     printf "${cyan}Generating Concourse Keys.... "
-    bash ./keys/generate > /dev/null 2>&1
+    bash /tmp/concourse-docker/keys/generate > /dev/null 2>&1
     success
 }
 
 deploy_concourse() {
     printf "${cyan}Deploying Concourse.... "
     ip=`ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p'`
-    export DNS_URL=$ip.xip.io
+    export DNS_URL=$ip
     #export DNS_URL="localhost"
     case $kernel_version in
     4|5)
@@ -170,27 +179,42 @@ deploy_concourse() {
     *)
         print_cross;;
     esac
+    cd /tmp/concourse-docker
     docker-compose up -d > /dev/null 2>&1
     success
-    cd ../
+    cd - > /dev/null 2>&1
 }
 
 build_deploy_vault() {
     printf "${cyan}Deploying Vault.... "
+    cd /tmp/vault-consul-docker
     docker-compose up -d --build > /dev/null 2>&1
     success
-    cd ../
+    cd - > /dev/null 2>&1
+}
+
+destroy() {
+    printf "${cyan}Destroying vault.... "
+    docker kill `docker ps -q --filter "name=vault-consul-docker"` > /dev/null 2>&1
+    print_check
+    printf "${cyan}Destroying concourse.... "
+    docker kill `docker ps -q --filter "name=concourse-docker"` > /dev/null 2>&1
+    print_check
+    printf "${cyan}Pruning docker containers and networks.... "
+    docker system prune -f > /dev/null 2>&1
+    print_check
+    printf "${cyan}Pruning docker volumes.... "
+    docker volume prune -f > /dev/null 2>&1
+    print_check
 }
 
 cleanup() {
-    [ -d "vault-consul-docker" ] && cd vault-consul-docker && docker-compose kill && cd ..
-    [ -d "concourse-docker" ] && cd concourse-docker && docker-compose kill && cd ..
-    sudo rm -Rf vault-consul-docker
-    sudo rm -Rf concourse-docker
-    rm concourse-policy.hcl
-    rm pipeline.yml
-    docker system prune -f
-    docker volume prune -f
+    printf "${cyan}Cleaning up files and folders.... "
+    [ -d "/tmp/vault-consul-docker" ] && sudo rm -Rf /tmp/vault-consul-docker > /dev/null 2>&1
+    [ -d "/tmp/concourse-docker" ] && sudo rm -Rf /tmp/concourse-docker > /dev/null 2>&1
+    [ -f "/tmp/concourse-policy.hcl" ] && sudo rm /tmp/concourse-policy.hcl > /dev/null 2>&1
+    [ -f "/tmp/pipeline.yml" ] && sudo rm /tmp/pipeline.yml > /dev/null 2>&1
+    print_check
 }
 
 vault_init() {
@@ -221,43 +245,51 @@ vault_init() {
 }
 
 vault_unseal() {
-    printf "${cyan}Unsealing the vault.... "
+    printf "${cyan}Unsealing the vault.... ${reset}"
     vault operator unseal -address=http://localhost:8200 $1 > /dev/null 2>&1
     success
 }
 
 vault_create_store() {
-    printf "${cyan}Creating vault secret store.... "
+    printf "${cyan}Creating vault secret store.... ${reset}"
     vault secrets enable -address=http://localhost:8200 -version=1 -path=concourse kv > /dev/null 2>&1
     success
 }
 
 vault_create_policy() {
-    printf "${cyan}Create vault policy.... "
+    printf "${cyan}Create vault policy.... ${reset}"
     echo 'path "concourse/*" {
   policy = "read"
-}' >> concourse-policy.hcl
-    vault policy write -address=http://localhost:8200 concourse ./concourse-policy.hcl > /dev/null 2>&1
+}' > /tmp/concourse-policy.hcl
+    vault policy write -address=http://localhost:8200 concourse /tmp/concourse-policy.hcl > /dev/null 2>&1
     success
+}
+
+pipeline_add_job() {
+    local name=$1 repo_url=$2 repo_branch=$3
+    local resource="  - name: ${name}_repo
+    type: git
+    source:
+      uri: ${repo_url}
+      branch: ${repo_branch}"
+    local job="  - name: ${name}_job
+    public: true
+    plan:
+      - get: ${name}_repo
+      - task: deploy_${name}
+        file: ${name}_repo/task/task.yml"
+    echo -e "${resource}\n$(cat /tmp/pipeline.yml)" > /tmp/pipeline.yml
+    echo -e "${job}\n" >> /tmp/pipeline.yml
 }
 
 build_pipeline() {
     printf "${cyan}Creating pipeline definition.... ${reset}"
-    echo '---
-resources:
-  - name: swarm-repo
-    type: git
-    source:
-      uri: https://github.com/EMC-Underground/ansible_install_dockerswarm
-      branch: master
-
-jobs:
-  - name: deploy-swarm
-    public: true
-    plan:
-      - get: swarm-repo
-      - task: ansible-playbook
-        file: swarm-repo/task/task.yml' >> pipeline.yml
+    echo -e "jobs:" > /tmp/pipeline.yml
+    pipeline_add_job "swarm" "https://github.com/EMC-Underground/ansible_install_dockerswarm" "dev"
+    pipeline_add_job "concourse" "https://github.com/EMC-Underground/service_concourse" "master"
+    echo -e "resources:\n$(cat /tmp/pipeline.yml)" > /tmp/pipeline.yml
+    echo -e "---\n$(cat /tmp/pipeline.yml)" > /tmp/pipeline.yml
+    [ -f /tmp/pipeline.yml ]
     success
 }
 
@@ -288,16 +320,16 @@ build_docker_network() {
 }
 
 capture_num_servers() {
-    printf "${magenta}How many servers will you use (odd numbers only): ${reset}"
     local __resultvar=$1
     until [ $((result%2)) -ne 0 ]
     do
+        printf "${magenta}How many servers will you use (odd numbers only): ${reset}"
         read result
     done
     eval $__resultvar="'$result'"
 }
 
-capture_server_ips() {
+input_server_ips() {
     printf "${magenta}Enter server IP addresses\n"
     local __resultvar=$1
     local i=0
@@ -318,6 +350,11 @@ capture_server_ips() {
     done
     local result=$(join_by , "${servers[@]}")
     eval $__resultvar="'$result'"
+}
+
+capture_server_ips() {
+    local list=()
+    echo "test"
 }
 
 capture_username() {
@@ -354,40 +391,9 @@ function valid_ip() {
     return $stat
 }
 
-determine_linux_distro() {
-    if [ -f /etc/os-release ]; then
-        # freedesktop.org and systemd
-        . /etc/os-release
-        OS=$NAME
-        VER=$VERSION_ID
-    elif type lsb_release >/dev/null 2>&1; then
-        # linuxbase.org
-        OS=$(lsb_release -si)
-        VER=$(lsb_release -sr)
-    elif [ -f /etc/lsb-release ]; then
-        # For some versions of Debian/Ubuntu without lsb_release command
-        . /etc/lsb-release
-        OS=$DISTRIB_ID
-        VER=$DISTRIB_RELEASE
-    elif [ -f /etc/debian_version ]; then
-        # Older Debian/Ubuntu/etc.
-        OS=Debian
-        VER=$(cat /etc/debian_version)
-    elif [ -f /etc/SuSe-release ]; then
-        # Older SuSE/etc.
-        ...
-    elif [ -f /etc/redhat-release ]; then
-        # Older Red Hat, CentOS, etc.
-        ...
-    else
-        # Fall back to uname, e.g. "Linux <version>", also works for BSD, etc.
-        OS=$(uname -s)
-        VER=$(uname -r)
-    fi
-}
-
 concourse_login() {
     printf "${cyan}Logging in to concourse.... "
+    sleep 2
     local i=0
     local o=0
     while [[ $i -lt 1 ]]
@@ -409,15 +415,21 @@ concourse_login() {
     done
 }
 
+fly_sync() {
+    printf "${cyan}Syncing the fly cli.... ${reset}"
+    fly --target main sync > /dev/null 2>&1
+    success
+}
+
 set_swarm_pipeline() {
-    printf "${cyan}Creating yo damn shit!.... ${reset}"
-    fly --target main set-pipeline -p build -c pipeline.yml -n > /dev/null 2>&1
+    printf "${cyan}Creating build pipeline.... ${reset}"
+    fly --target main set-pipeline -p build -c /tmp/pipeline.yml -n > /dev/null
     success
-    printf "${cyan}Unpausing yo damn shit!.... ${reset}"
-    fly --target main unpause-pipeline -p build > /dev/null 2>&1
+    printf "${cyan}Unpausing the build pipeline.... ${reset}"
+    fly --target main unpause-pipeline -p build > /dev/null
     success
-    printf "${cyan}Deploying yo damn shit!.... ${reset}"
-    fly --target main trigger-job --job=build/deploy-swarm > /dev/null 2>&1
+    printf "${cyan}Triggering the build-swarm job.... ${reset}"
+    fly --target main trigger-job --job=build/swarm_job > /dev/null
     success
 }
 
@@ -432,34 +444,55 @@ capture_ntp_server() {
 
 function join_by { local IFS="$1"; shift; echo "$*"; }
 
-vault_create_policy() {
-    printf "${cyan}Create vault policy.... "
-    echo 'path "concourse/*" {
-  policy = "read"
-}' >> concourse-policy.hcl
-    vault policy write -address=http://localhost:8200 concourse ./concourse-policy.hcl > /dev/null 2>&1
-    success
+print_title() {
+    printf "${blue}---==Project Colfax ${app_version}==---\n"
+    printf "This project is aimed to deploy a Dell Tech Automation Platform\n"
+    printf "Please report issues to https://github.com/EMC-Underground/project_colfax${reset}\n\n"
 }
 
 software_pre_reqs() {
+    versions=0
+    local install
     git_checks
     docker_checks
     docker_compose_checks
     fly_checks
     vault_checks
     jq_checks
+    check_kernel kernel_version
+    [ $kernel_version -lt 4 ] && failed_software=( "${failed_software[@]}" "kernel" )
+    if [ $versions -eq 1 ]
+    then
+        printf "${red}\n################### Pre-Reqs not met! ##################${reset}\n\n"
+        printf "Install pre-reqs? [y/n]: "
+        read install
+        IFS=","
+        case $install in
+            "y"|"yes")
+                [ $kernel_version -lt 4 ] && echo "Kernel update required. \
+                    This machine will reboot after pre-req's are isntalled\n"
+                bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) "${failed_software[*]}" dev
+                ;;
+            "n"|"no")
+                printf "${green}This command will run an Ansible Playbook to install\n"
+                printf "all pre-requisite software (inc. Ansible)\n\n"
+                echo "bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) ${failed_software[*]} dev"
+                ;;
+        esac
+        exit 0
+    fi
+    printf "\n${green}All Pre-Reqs met!${reset}\n\n"
 }
 
-if [[ $# -eq 0 ]]
-then
-    software_pre_reqs
-    check_kernel kernel_version
+capture_data() {
     capture_num_servers num_servers
-    capture_server_ips server_list $num_servers
+    [ ${#server_list[@]} -eq 0 ] && input_server_ips server_list $num_servers
     capture_username user_name
     capture_password password
     capture_ntp_server ntp_server
-    build_docker_network
+}
+
+vault_setup() {
     pull_repo "https://github.com/EMC-Underground/vault-consul-docker.git"
     build_deploy_vault
     vault_init keys
@@ -470,33 +503,68 @@ then
     vault_create_store
     vault_create_policy
     vault_create_token token
-    pull_repo "https://github.com/EMC-Underground/concourse-docker.git"
-    generate_keys
     export VAULT_CLIENT_TOKEN=$token
-    deploy_concourse
     create_vault_secret "concourse/main/build/" "password" $password
     create_vault_secret "concourse/main/build/" "user_name" $user_name
     create_vault_secret "concourse/main/build/" "ntp_server" $ntp_server
     create_vault_secret "concourse/main/build/" "server_list" $server_list
+}
+
+concourse_setup() {
+    pull_repo "https://github.com/EMC-Underground/concourse-docker.git"
+    generate_keys
+    deploy_concourse
     build_pipeline
     concourse_login
     set_swarm_pipeline
-    echo "${cyan}Vault Concourse Key: ${green}${token}${reset}"
-    echo "${cyan}Vault Root Key: ${green}${roottoken}${reset}"
-    echo "${cyan}Concourse URL: ${green}http://$DNS_URL:8080${reset}"
-    echo "${cyan}Vault URL: ${green}http://$DNS_URL:8200${reset}"
-    printf "${cyan}Here are your server(s): "
-    echo "${green}${server_list[*]}"
-fi
+}
 
-case "$1" in
-    "destroy")
-        cleanup
-        ;;
-    "")
-        echo "${green}FIN${reset}"
-        ;;
-    *)
-        echo "${red}Did you mean ./bootstrap destroy?${reset}"
-        ;;
-esac
+print_finale() {
+    printf "${blue}###################### ${magenta}VAULT INFO ${blue}########################\n"
+    printf "${blue}##              ${magenta}URL: ${green}http://${DNS_URL}:8200\n"
+    printf "${blue}##       ${magenta}Root Token: ${green}${roottoken}\n"
+    printf "${blue}##  ${magenta}Concourse Token: ${green}${token}\n"
+    printf "${blue}##########################################################\n"
+    printf "\n"
+    printf "${blue}#################### ${magenta}CONCOURSE INFO ${blue}######################\n"
+    printf "${blue}##              ${magenta}URL: ${green}http://${DNS_URL}:8080\n"
+    printf "${blue}##             ${magenta}User: ${green}test\n"
+    printf "${blue}##         ${magenta}Password: ${green}test\n"
+    printf "${blue}##########################################################${reset}\n"
+    printf "\n"
+    printf "${blue}#################### ${magenta}SWARM INFO ${blue}######################\n"
+    printf "${blue}##              ${magenta}If running from a remote CLI\n"
+    printf "${blue}##              ${green}export DOCKER_HOST=${server_list[0]}\n"
+    printf "${blue}##             ${magenta}Proxy URL: ${green}https://proxy.${server_list[0]}.xip.io\n"
+    printf "${blue}##########################################################${reset}\n"
+}
+
+main() {
+    print_title
+    software_pre_reqs
+    capture_data
+    build_docker_network
+    vault_setup
+    concourse_setup
+}
+
+server_list=()
+for arg in $@
+do
+    case $arg in
+        "destroy"|"--destroy"|"-d")
+            print_title
+            cleanup
+            destroy
+            exit 0
+            ;;
+        "servers"|"--servers"|"-s")
+            ;;
+        *)
+            ;;
+    esac
+done
+
+main
+cleanup
+print_finale
