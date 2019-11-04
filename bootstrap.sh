@@ -471,12 +471,12 @@ software_pre_reqs() {
             "y"|"yes")
                 [ $kernel_version -lt 4 ] && echo "Kernel update required. \
                     This machine will reboot after pre-req's are isntalled\n"
-                bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) "${failed_software[*]}" dev
+                bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/master/prereq.sh) "${failed_software[*]}"
                 ;;
             "n"|"no")
                 printf "${green}This command will run an Ansible Playbook to install\n"
                 printf "all pre-requisite software (inc. Ansible)\n\n"
-                echo "bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) ${failed_software[*]} dev"
+                echo "bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/master/prereq.sh) ${failed_software[*]}"
                 ;;
         esac
         exit 0
