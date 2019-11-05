@@ -285,7 +285,7 @@ pipeline_add_job() {
 build_pipeline() {
     printf "${cyan}Creating pipeline definition.... ${reset}"
     echo -e "jobs:" > /tmp/pipeline.yml
-    pipeline_add_job "swarm" "https://github.com/EMC-Underground/ansible_install_dockerswarm" "dev"
+    pipeline_add_job "swarm" "https://github.com/EMC-Underground/ansible_install_dockerswarm" "master"
     pipeline_add_job "concourse" "https://github.com/EMC-Underground/service_concourse" "master"
     echo -e "resources:\n$(cat /tmp/pipeline.yml)" > /tmp/pipeline.yml
     echo -e "---\n$(cat /tmp/pipeline.yml)" > /tmp/pipeline.yml
