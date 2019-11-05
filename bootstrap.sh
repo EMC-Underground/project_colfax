@@ -265,28 +265,62 @@ vault_create_policy() {
     success
 }
 
-pipeline_add_job() {
-    local name=$1 repo_url=$2 repo_branch=$3
-    local resource="  - name: ${name}_repo
+pipeline_build_out() {
+    for (( i=0; i<${#jobs[@]}; i++ ))
+    do
+        local job_name=`echo ${jobs[$i]} | jq -r .job_name`
+        local repo_url=`echo ${jobs[$i]} | jq -r .repo_url`
+        local repo_branch=`echo ${jobs[$i]} | jq -r .repo_branch`
+        local resource="  - name: ${job_name}_repo
     type: git
     source:
       uri: ${repo_url}
       branch: ${repo_branch}"
-    local job="  - name: ${name}_job
+        local job="  - name: ${job_name}_job
     public: true
-    plan:
-      - get: ${name}_repo
-      - task: deploy_${name}
-        file: ${name}_repo/task/task.yml"
-    echo -e "${resource}\n$(cat /tmp/pipeline.yml)" > /tmp/pipeline.yml
-    echo -e "${job}\n" >> /tmp/pipeline.yml
+    serial: true
+    plan:"
+        if [ $i -gt 0 ]
+        then
+            job="${job}
+      - get: timestamp
+        trigger: true
+        passed: [ $(echo ${jobs[$i-1]} | jq -r .job_name)_job ]"
+        fi
+        job="${job}
+      - get: ${job_name}_repo
+      - task: deploy_${job_name}
+        file: ${job_name}_repo/task/task.yml"
+        if [[ $i -lt $((${#jobs[@]}-1)) ]]
+        then
+            job="${job}
+      - put: timestamp"
+        fi
+        echo -e "${resource}\n$(cat /tmp/pipeline.yml)" > /tmp/pipeline.yml
+        echo -e "${job}\n" >> /tmp/pipeline.yml
+    done
 }
 
+add_job() {
+    local job_name=$1 repo_url=$2 repo_branch=$3
+    local value="{\"job_name\":\"${job_name}\",\"repo_url\":\"${repo_url}\",\"repo_branch\":\"${repo_branch}\"}"
+    jobs=( "${jobs[@]}" $value )
+}
+
+
 build_pipeline() {
+    jobs=()
     printf "${cyan}Creating pipeline definition.... ${reset}"
     echo -e "jobs:" > /tmp/pipeline.yml
-    pipeline_add_job "swarm" "https://github.com/EMC-Underground/ansible_install_dockerswarm" "dev"
-    pipeline_add_job "concourse" "https://github.com/EMC-Underground/service_concourse" "master"
+    add_job "swarm" "https://github.com/EMC-Underground/ansible_install_dockerswarm" "master"
+    add_job "concourse" "https://github.com/EMC-Underground/service_concourse" "master"
+    pipeline_build_out
+    echo -e "  - name: timestamp
+    type: time
+    source:
+      location: America/Los_Angeles
+      start: 12:00 AM
+      stop: 12:00 AM\n$(cat /tmp/pipeline.yml)" > /tmp/pipeline.yml
     echo -e "resources:\n$(cat /tmp/pipeline.yml)" > /tmp/pipeline.yml
     echo -e "---\n$(cat /tmp/pipeline.yml)" > /tmp/pipeline.yml
     [ -f /tmp/pipeline.yml ]
@@ -393,7 +427,7 @@ function valid_ip() {
 
 concourse_login() {
     printf "${cyan}Logging in to concourse.... "
-    sleep 2
+    sleep 4
     local i=0
     local o=0
     while [[ $i -lt 1 ]]
