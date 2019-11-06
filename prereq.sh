@@ -69,7 +69,7 @@ install_prereqs() {
     printf "${cyan}Kickoff ${branch} pre-req install playbook.... ${reset}"
     success
     curl https://raw.githubusercontent.com/EMC-Underground/project_colfax/${branch}/playbook.yml -o /tmp/playbook.yml > /dev/null 2>&1
-    ansible-playbook /tmp/playbook.yml --inventory=127.0.0.1, --tags $install_tags
+    ansible-playbook /tmp/playbook.yml --inventory 127.0.0.1, --tags $install_tags
 }
 
 cleanup() {

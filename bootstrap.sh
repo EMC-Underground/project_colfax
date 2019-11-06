@@ -499,7 +499,7 @@ software_pre_reqs() {
     if [ $versions -eq 1 ]
     then
         printf "${red}\n################### Pre-Reqs not met! ##################${reset}\n\n"
-        printf "Install pre-reqs? [y/n]: "
+        printf "Install/Update pre-reqs? [y/n]: "
         read install
         IFS=","
         case $install in
