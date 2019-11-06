@@ -504,9 +504,12 @@ software_pre_reqs() {
         IFS=","
         case $install in
             "y"|"yes")
-                [ $kernel_version -lt 4 ] && printf "\nKernel update required.\n"
+                if [[ " ${failed_software[@]} " =~ " kernel " ]]
+                then
+                    printf "\nKernel update required.\n"
                     printf "This machine will reboot after pre-req's are installed\n"
                     printf "Please restart the bootstrap script once complete\n\n"
+                fi
                 bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) "${failed_software[*]}" dev
                 software_pre_reqs
                 ;;
