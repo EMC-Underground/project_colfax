@@ -515,8 +515,8 @@ software_pre_reqs() {
                 ;;
             "n"|"no")
                 printf "${green}This command will run an Ansible Playbook to install\n"
-                printf "all pre-requisite software (inc. Ansible)\n\n"
-                echo "bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) ${failed_software[*]} dev"
+                printf "all pre-requisite software (inc. Ansible)\n\n${reset}"
+                printf "bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) ${failed_software[*]} dev\n\n"
                 exit 0
                 ;;
         esac
