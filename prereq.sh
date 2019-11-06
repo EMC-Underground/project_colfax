@@ -90,4 +90,7 @@ install_tags=$1
 [ $2 ] && branch=$2
 main
 cleanup
-echo "Please re-run now that pre-reqs are all met"
+if [[ " ${install_tags[@]} " =~ " kernel " ]]
+then
+    exit 0
+fi
