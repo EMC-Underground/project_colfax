@@ -298,8 +298,6 @@ pipeline_build_out() {
         fi
         echo -e "${resource}\n$(cat /tmp/pipeline.yml)" > /tmp/pipeline.yml
         echo -e "${job}\n" >> /tmp/pipeline.yml
-    done
-}
 
 add_job() {
     local job_name=$1 repo_url=$2 repo_branch=$3
@@ -313,6 +311,7 @@ build_pipeline() {
     printf "${cyan}Creating pipeline definition.... ${reset}"
     echo -e "jobs:" > /tmp/pipeline.yml
     add_job "swarm" "https://github.com/EMC-Underground/ansible_install_dockerswarm" "master"
+    add_job "network" "https://github.com/EMC-Underground/project_colfax" "dev"
     add_job "concourse" "https://github.com/EMC-Underground/service_concourse" "master"
     pipeline_build_out
     echo -e "  - name: timestamp
