@@ -3,6 +3,7 @@
 red=`tput setaf 1`
 green=`tput setaf 2`
 reset=`tput sgr0`
+cyan=`tput setaf 6`
 check="\xE2\x9C\x94"
 cross="\xE2\x9C\x98"
 
@@ -65,9 +66,9 @@ apt_steps() {
 }
 
 install_prereqs() {
-    printf "${cyan}Running pre-req install playbook.... ${reset}"
+    printf "${cyan}Running pre-req install playbook....\n${reset}"
     curl https://raw.githubusercontent.com/EMC-Underground/project_colfax/${branch}/playbook.yml -o /tmp/playbook.yml > /dev/null 2>&1
-    ansible-playbook /tmp/playbook.yml --tags $install_tags > /dev/null
+    ansible-playbook /tmp/playbook.yml -i localhost --tags $install_tags
     success
 }
 

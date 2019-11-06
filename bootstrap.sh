@@ -496,7 +496,7 @@ software_pre_reqs() {
     vault_checks
     jq_checks
     check_kernel kernel_version
-    [ $kernel_version -lt 4 ] && failed_software=( "${failed_software[@]}" "kernel" )
+    [ $kernel_version -lt 4 ] && failed_software=( "${failed_software[@]}" "kernel" ) && versions=1
     if [ $versions -eq 1 ]
     then
         printf "${red}\n################### Pre-Reqs not met! ##################${reset}\n\n"
@@ -505,9 +505,9 @@ software_pre_reqs() {
         IFS=","
         case $install in
             "y"|"yes")
-                [ $kernel_version -lt 4 ] && echo "\nKernel update required."
+                [ $kernel_version -lt 4 ] && printf "\nKernel update required.\n"
                     printf "This machine will reboot after pre-req's are installed\n"
-                    printf "Please restart the bootstrap once complete\n\n"
+                    printf "Please restart the bootstrap script once complete\n\n"
                 bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) "${failed_software[*]}" dev
                 ;;
             "n"|"no")
