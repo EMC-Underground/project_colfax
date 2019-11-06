@@ -1,0 +1,17 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: alpinelinux/docker-cli
+    tag: latest
+
+run:
+  path: sh
+  args:
+  - -c
+  - |
+    docker network create --driver=overlay traefik-net
+    docker network create --driver=overlay vault-backend
+    docker network create --driver=overlay vault-secrets
