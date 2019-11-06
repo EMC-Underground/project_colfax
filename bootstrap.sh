@@ -607,5 +607,5 @@ do
 done
 
 main
-cleanup
+#cleanup
 print_finale
