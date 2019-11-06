@@ -511,6 +511,7 @@ software_pre_reqs() {
                     printf "Please restart the bootstrap script once complete\n\n"
                 fi
                 bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) "${failed_software[*]}" dev
+                failed_software=()
                 software_pre_reqs
                 ;;
             "n"|"no")
