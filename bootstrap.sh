@@ -15,6 +15,7 @@ min_vv="1.2.3"
 min_fv="5.6.0"
 min_jv="1.5"
 min_gv="1.5"
+min_kv="4.0"
 app_version="v0.4.3"
 failed_software=()
 
@@ -27,6 +28,14 @@ check_kernel() {
     printf "${green}${result}\n"
     local maj_ver=`echo $result | cut -d'.' -f1`
     eval $__resultvar="'$maj_ver'"
+}
+
+kernel_checks() {
+    local tool="kernel"
+    local kv=0
+    printf "${cyan}Checking ${tool} version.... "
+    kv=`uname -r | awk -F- '{print $1}'`
+    success_version $kv $min_kv $tool
 }
 
 print_check() {
@@ -168,17 +177,7 @@ deploy_concourse() {
     printf "${cyan}Deploying Concourse.... "
     ip=`ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p'`
     export DNS_URL=$ip
-    #export DNS_URL="localhost"
-    case $kernel_version in
-    4|5)
-        export STORAGE_DRIVER=overlay
-        ;;
-    3)
-        export STORAGE_DRIVER=btrfs
-        ;;
-    *)
-        print_cross;;
-    esac
+    export STORAGE_DRIVER=overlay
     cd /tmp/concourse-docker
     docker-compose up -d > /dev/null 2>&1
     success
@@ -495,8 +494,8 @@ software_pre_reqs() {
     fly_checks
     vault_checks
     jq_checks
-    check_kernel kernel_version
-    [ $kernel_version -lt 4 ] && failed_software=( "${failed_software[@]}" "kernel" ) && versions=1
+    #check_kernel kernel_version
+    kernel_checks
     if [ $versions -eq 1 ]
     then
         printf "${red}\n################### Pre-Reqs not met! ##################${reset}\n\n"
