@@ -119,7 +119,7 @@
     systemd:
       name: docker
       daemon_reload: yes
-      state: restart
+      state: started
       enabled: yes
     tags:
       - docker
