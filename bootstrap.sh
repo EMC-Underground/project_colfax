@@ -298,6 +298,8 @@ pipeline_build_out() {
         fi
         echo -e "${resource}\n$(cat /tmp/pipeline.yml)" > /tmp/pipeline.yml
         echo -e "${job}\n" >> /tmp/pipeline.yml
+    done
+    }
 
 add_job() {
     local job_name=$1 repo_url=$2 repo_branch=$3
@@ -435,6 +437,7 @@ concourse_login() {
         if [ $? -eq 0 ]
         then
             success
+            sleep 1
             ((i++))
         else
             ((o++))
@@ -502,17 +505,18 @@ software_pre_reqs() {
         IFS=","
         case $install in
             "y"|"yes")
-                [ $kernel_version -lt 4 ] && echo "Kernel update required. \
-                    This machine will reboot after pre-req's are isntalled\n"
+                [ $kernel_version -lt 4 ] && echo "\nKernel update required."
+                    printf "This machine will reboot after pre-req's are installed\n"
+                    printf "Please restart the bootstrap once complete\n\n"
                 bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) "${failed_software[*]}" dev
                 ;;
             "n"|"no")
                 printf "${green}This command will run an Ansible Playbook to install\n"
                 printf "all pre-requisite software (inc. Ansible)\n\n"
                 echo "bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) ${failed_software[*]} dev"
+                exit 0
                 ;;
         esac
-        exit 0
     fi
     printf "\n${green}All Pre-Reqs met!${reset}\n\n"
 }
