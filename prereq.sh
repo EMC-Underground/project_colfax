@@ -66,10 +66,10 @@ apt_steps() {
 }
 
 install_prereqs() {
-    printf "${cyan}Running ${branch} pre-req install playbook....\n${reset}"
+    printf "${cyan}Kickoff ${branch} pre-req install playbook.... ${reset}"
+    success
     curl https://raw.githubusercontent.com/EMC-Underground/project_colfax/${branch}/playbook.yml -o /tmp/playbook.yml > /dev/null 2>&1
     ansible-playbook /tmp/playbook.yml --connection=local --inventory=localhost, --tags $install_tags
-    success
 }
 
 cleanup() {
