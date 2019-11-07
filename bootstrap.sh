@@ -459,14 +459,15 @@ fly_sync() {
 
 build_pipeline_vars() {
     echo "---" > /tmp/vars.yml
-    echo "dns_suffix: \"$(echo ${server_list} | awk -F, '{print $1}').xip.io"\" >> /tmp/vars.yml
-    echo "docker_host: \"$(echo ${server_list} | awk -F, '{print $1}')"\" >> /tmp/vars.yml
+    echo "dnssuffix: $(echo ${server_list} | awk -F, '{print $1}').xip.io" >> /tmp/vars.yml
+    echo "dockerhost: $(echo ${server_list} | awk -F, '{print $1}')" >> /tmp/vars.yml
 }
 
 set_swarm_pipeline() {
     printf "${cyan}Creating build pipeline.... ${reset}"
     build_pipeline_vars
-    fly --target main set-pipeline -p build -c /tmp/pipeline.yml -v dns_suffix=$(echo ${server_list} | awk -F, '{print $1}').xip.io -v docker_host=$(echo ${server_list} | awk -F, '{print $1}') -n > /dev/null
+    fly --target main set-pipeline -p build -c /tmp/pipeline.yml -v dnssuffix=$(echo ${server_list} | awk -F, '{print $1}').xip.io -v dockerhost=$(echo ${server_list} | awk -F, '{print $1}') -n > /dev/null
+    echo "fly --target main set-pipeline -p build -c /tmp/pipeline.yml -v dnssuffix=$(echo ${server_list} | awk -F, '{print $1}').xip.io -v dockerhost=$(echo ${server_list} | awk -F, '{print $1}') -n > /dev/null"
     success
     printf "${cyan}Unpausing the build pipeline.... ${reset}"
     fly --target main unpause-pipeline -p build > /dev/null

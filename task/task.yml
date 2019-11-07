@@ -8,8 +8,8 @@ image_resource:
     tag: latest
 
 params:
-  DNS_SUFFIX: ((dns_suffix))
-  DOCKER_HOST: ((docker_host))
+  DNS_SUFFIX: ((dnssuffix))
+  DOCKER_HOST: ((dockerhost))
 
 run:
   path: sh
