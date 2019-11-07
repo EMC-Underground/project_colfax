@@ -458,7 +458,7 @@ fly_sync() {
 
 set_swarm_pipeline() {
     printf "${cyan}Creating build pipeline.... ${reset}"
-    fly --target main set-pipeline -p build -c /tmp/pipeline.yml -n > /dev/null
+    fly --target main set-pipeline -p build -c /tmp/pipeline.yml -v "DNS_SUFFIX=${server_list[0]}.xip.io","DOCKER_HOST=${server_list[0]}" -n > /dev/null
     success
     printf "${cyan}Unpausing the build pipeline.... ${reset}"
     fly --target main unpause-pipeline -p build > /dev/null
