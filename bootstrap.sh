@@ -466,7 +466,7 @@ build_pipeline_vars() {
 set_swarm_pipeline() {
     printf "${cyan}Creating build pipeline.... ${reset}"
     build_pipeline_vars
-    fly --target main set-pipeline -p build -c /tmp/pipeline.yml --load-vars-from /tmp/vars.yml -n > /dev/null
+    fly --target main set-pipeline -p build -c /tmp/pipeline.yml -v dns_suffix=$(echo ${server_list} | awk -F, '{print $1}').xip.io -v docker_host=$(echo ${server_list} | awk -F, '{print $1}') -n > /dev/null
     success
     printf "${cyan}Unpausing the build pipeline.... ${reset}"
     fly --target main unpause-pipeline -p build > /dev/null
