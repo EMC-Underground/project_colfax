@@ -7,15 +7,12 @@ image_resource:
     repository: alpinelinux/docker-cli
     tag: latest
 
-params:
-  DNS_SUFFIX: ((dns_suffix))
-  DOCKER_HOST: ((docker_host))
-
 run:
   path: sh
   args:
   - -c
   - |
+    env
     docker network create --driver=overlay traefik-net
     docker network create --driver=overlay vault-backend
     docker network create --driver=overlay vault-secrets

@@ -213,6 +213,7 @@ cleanup() {
     [ -d "/tmp/concourse-docker" ] && sudo rm -Rf /tmp/concourse-docker > /dev/null 2>&1
     [ -f "/tmp/concourse-policy.hcl" ] && sudo rm /tmp/concourse-policy.hcl > /dev/null 2>&1
     [ -f "/tmp/pipeline.yml" ] && sudo rm /tmp/pipeline.yml > /dev/null 2>&1
+    [ -f "/tmp/vars.yml" ] && sudo rm /tmp/vars.yml > /dev/null 2>&1
     print_check
 }
 
@@ -311,7 +312,7 @@ build_pipeline() {
     jobs=()
     printf "${cyan}Creating pipeline definition.... ${reset}"
     echo -e "jobs:" > /tmp/pipeline.yml
-    add_job "swarm" "https://github.com/EMC-Underground/ansible_install_dockerswarm" "master"
+    #add_job "swarm" "https://github.com/EMC-Underground/ansible_install_dockerswarm" "master"
     add_job "network" "https://github.com/EMC-Underground/project_colfax" "dev"
     add_job "concourse" "https://github.com/EMC-Underground/service_concourse" "master"
     pipeline_build_out
@@ -456,15 +457,22 @@ fly_sync() {
     success
 }
 
+build_pipeline_vars() {
+    echo "---" > /tmp/vars.yml
+    echo "dns_suffix: \"$(echo ${server_list} | awk -F, '{print $1}').xip.io"\" >> /tmp/vars.yml
+    echo "docker_host: \"$(echo ${server_list} | awk -F, '{print $1}')"\" >> /tmp/vars.yml
+}
+
 set_swarm_pipeline() {
     printf "${cyan}Creating build pipeline.... ${reset}"
-    fly --target main set-pipeline -p build -c /tmp/pipeline.yml -v "DNS_SUFFIX=${server_list[0]}.xip.io","DOCKER_HOST=${server_list[0]}" -n > /dev/null
+    build_pipeline_vars
+    fly --target main set-pipeline -p build -c /tmp/pipeline.yml --load-vars-from /tmp/vars.yml -n > /dev/null
     success
     printf "${cyan}Unpausing the build pipeline.... ${reset}"
     fly --target main unpause-pipeline -p build > /dev/null
     success
     printf "${cyan}Triggering the build-swarm job.... ${reset}"
-    fly --target main trigger-job --job=build/swarm_job > /dev/null
+    fly --target main trigger-job --job=build/"$(echo ${jobs[0]} | jq -r .job_name)_job" > /dev/null
     success
 }
 
