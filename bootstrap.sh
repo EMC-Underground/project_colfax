@@ -314,7 +314,6 @@ build_pipeline() {
     echo -e "jobs:" > /tmp/pipeline.yml
     add_job "swarm" "https://github.com/EMC-Underground/ansible_install_dockerswarm" "master"
     add_job "network" "https://github.com/EMC-Underground/project_colfax" "dev"
-    #add_job "concourse" "https://github.com/EMC-Underground/service_concourse" "master"
     pipeline_build_out
     echo -e "  - name: timestamp
     type: time
@@ -457,17 +456,10 @@ fly_sync() {
     success
 }
 
-build_pipeline_vars() {
-    echo "---" > /tmp/vars.yml
-    echo "dnssuffix: $(echo ${server_list} | awk -F, '{print $1}').xip.io" >> /tmp/vars.yml
-    echo "dockerhost: $(echo ${server_list} | awk -F, '{print $1}')" >> /tmp/vars.yml
-}
-
 set_swarm_pipeline() {
     printf "${cyan}Creating build pipeline.... ${reset}"
     build_pipeline_vars
-    fly --target main set-pipeline -p build -c /tmp/pipeline.yml -v dnssuffix=$(echo ${server_list} | awk -F, '{print $1}').xip.io -v dockerhost=$(echo ${server_list} | awk -F, '{print $1}') -n > /dev/null
-    echo "fly --target main set-pipeline -p build -c /tmp/pipeline.yml -v dnssuffix=$(echo ${server_list} | awk -F, '{print $1}').xip.io -v dockerhost=$(echo ${server_list} | awk -F, '{print $1}') -n > /dev/null"
+    fly --target main set-pipeline -p build -c /tmp/pipeline.yml -n > /dev/null
     success
     printf "${cyan}Unpausing the build pipeline.... ${reset}"
     fly --target main unpause-pipeline -p build > /dev/null
