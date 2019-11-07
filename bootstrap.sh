@@ -558,6 +558,8 @@ vault_setup() {
     create_vault_secret "concourse/main/build/" "user_name" $user_name
     create_vault_secret "concourse/main/build/" "ntp_server" $ntp_server
     create_vault_secret "concourse/main/build/" "server_list" $server_list
+    create_vault_secret "concourse/main/build/" "dnssuffix" $(echo $server_list | awk -F, '{print $1}').xip.io
+    create_vault_secret "concourse/main/build/" "dockerhost" $(echo $server_list | awk -F, '{print $1}')
 }
 
 concourse_setup() {
