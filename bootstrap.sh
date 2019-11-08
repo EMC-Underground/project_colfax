@@ -365,30 +365,22 @@ capture_num_servers() {
 
 input_server_ips() {
     printf "${magenta}Enter server IP addresses\n"
-    local __resultvar=$1
     local i=0
-    local servers=()
     while [[ $i -lt $2 ]]
     do
         printf "${magenta}Server[${i}]: ${reset}"
         read ip$i
         eval p="\$ip${i}"
-        valid_ip $p
-        if [ $? -ne 0 ]
-        then
-            echo "${red}Please enter a valid IP Address"
-        else
-            [[ " ${servers[@]} " =~ " ${p} " ]] && echo "${red}Please enter a unique IP Address"
-            [[ ! " ${servers[@]} " =~ " ${p} " ]] && servers[$i]=$p && ((i++)) && continue
-        fi
+        validate_ip $p && server_list[$i]=$p && ((i++)) && continue
     done
-    local result=$(join_by , "${servers[@]}")
-    eval $__resultvar="'$result'"
 }
 
-capture_server_ips() {
-    local list=()
-    echo "test"
+validate_ip() {
+    local server=$1
+    [[ " ${server_list[@]} " =~ " ${server} " ]] && echo "${red}Please enter unique IP's${reset}" && return 1
+    valid_ip $server
+    [ $? -ne 0 ] && echo "${red}Please enter valid IP's${reset}" && return 1
+    return 0
 }
 
 capture_username() {
@@ -458,7 +450,6 @@ fly_sync() {
 
 set_swarm_pipeline() {
     printf "${cyan}Creating build pipeline.... ${reset}"
-    build_pipeline_vars
     fly --target main set-pipeline -p build -c /tmp/pipeline.yml -n > /dev/null
     success
     printf "${cyan}Unpausing the build pipeline.... ${reset}"
@@ -495,7 +486,6 @@ software_pre_reqs() {
     fly_checks
     vault_checks
     jq_checks
-    #check_kernel kernel_version
     kernel_checks
     if [ $versions -eq 1 ]
     then
@@ -527,11 +517,11 @@ software_pre_reqs() {
 }
 
 capture_data() {
-    capture_num_servers num_servers
+    [ ${#server_list[@]} -eq 0 ] && capture_num_servers num_servers
     [ ${#server_list[@]} -eq 0 ] && input_server_ips server_list $num_servers
-    capture_username user_name
-    capture_password password
-    capture_ntp_server ntp_server
+    [ -z ${user_name+x} ] && capture_username user_name
+    [ -z ${password+x} ] && capture_password password
+    [ -z ${ntp_server+x} ] && capture_ntp_server ntp_server
 }
 
 vault_setup() {
@@ -549,9 +539,9 @@ vault_setup() {
     create_vault_secret "concourse/main/build/" "password" $password
     create_vault_secret "concourse/main/build/" "user_name" $user_name
     create_vault_secret "concourse/main/build/" "ntp_server" $ntp_server
-    create_vault_secret "concourse/main/build/" "server_list" $server_list
-    create_vault_secret "concourse/main/build/" "dnssuffix" $(echo $server_list | awk -F, '{print $1}').xip.io
-    create_vault_secret "concourse/main/build/" "dockerhost" $(echo $server_list | awk -F, '{print $1}')
+    create_vault_secret "concourse/main/build/" "server_list" $(join_by "," ${server_list[@]})
+    create_vault_secret "concourse/main/build/" "dnssuffix" ${server_list[0]}.xip.io
+    create_vault_secret "concourse/main/build/" "dockerhost" ${server_list[0]}
 }
 
 concourse_setup() {
@@ -578,8 +568,8 @@ print_finale() {
     printf "\n"
     printf "${blue}#################### ${magenta}SWARM INFO ${blue}######################\n"
     printf "${blue}##              ${magenta}If running from a remote CLI\n"
-    printf "${blue}##              ${green}export DOCKER_HOST=${server_list[0]}\n"
-    printf "${blue}##             ${magenta}Proxy URL: ${green}https://proxy.${server_list[0]}.xip.io\n"
+    printf "${blue}##           ${green}export DOCKER_HOST=${server_list[0]}\n"
+    printf "${blue}##         ${magenta}Proxy URL: ${green}https://proxy.${server_list[0]}.xip.io\n"
     printf "${blue}##########################################################${reset}\n"
 }
 
@@ -592,9 +582,19 @@ main() {
     concourse_setup
 }
 
+usage="$(basename "$0") [-h] Project Colfax\n
+An IaC platform for Dell Technology offerings.\n\n
+Options:\n
+    [ --servers | -s ]      Comma delimited list of servers where the platform will deploy\n
+    [ --username | -u ]     Username used to deploy the platform on the nodes provided\n
+    [ --password | -p ]     Password used to deploy the platform on the nodes provided\n
+    [ --ntp | -n ]          NTP Server to use on the nodes provided\n
+    [ destroy | --destroy ] Destroy and cleanup the local bootstrap"
+
 server_list=()
 for arg in $@
 do
+    shift
     case $arg in
         "destroy"|"--destroy"|"-d")
             print_title
@@ -602,7 +602,34 @@ do
             destroy
             exit 0
             ;;
-        "servers"|"--servers"|"-s")
+        "--servers"|"-s")
+            servers=$1
+            pre_server_list=( ${servers//,/ } )
+            server_count=${#pre_server_list[@]}
+            [ $((server_count%2)) -eq 0 ] && echo "${red}Please enter an odd number of servers" && exit 1
+            for item in ${pre_server_list[@]}
+            do
+                validate_ip $item
+                [ $? -ne 0 ] && echo "${green}Example: --servers 10.0.0.10,10.0.0.11,10.0.0.12${reset}" && exit 1
+                server_list=( "${server_list[@]}" $item )
+            done
+            shift
+            ;;
+        "--username"|"-u"|"--user")
+            user_name=$1
+            shift
+            ;;
+        "--password"|"-p"|"--pass")
+            password=$1
+            shift
+            ;;
+        "--ntp"|"-n"|"--ntpserver")
+            ntp_server=$1
+            shift
+            ;;
+        "--help"|"-h")
+            echo -e $usage
+            exit 0
             ;;
         *)
             ;;
@@ -610,5 +637,5 @@ do
 done
 
 main
-#cleanup
+cleanup
 print_finale
