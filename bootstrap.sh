@@ -312,9 +312,7 @@ build_pipeline() {
     jobs=()
     printf "${cyan}Creating pipeline definition.... ${reset}"
     echo -e "jobs:" > /tmp/pipeline.yml
-    add_job "swarm" "https://github.com/EMC-Underground/ansible_install_dockerswarm" "master"
-    add_job "network" "https://github.com/EMC-Underground/project_colfax" "dev"
-    add_job "consul" "https://github.com/EMC-Underground/service_consul" "master"
+    pipeline_jobs
     pipeline_build_out
     echo -e "  - name: timestamp
     type: time
@@ -581,6 +579,13 @@ main() {
     build_docker_network
     vault_setup
     concourse_setup
+}
+
+pipeline_jobs() {
+    add_job "swarm" "https://github.com/EMC-Underground/ansible_install_dockerswarm" "master"
+    add_job "network" "https://github.com/EMC-Underground/project_colfax" "dev"
+    add_job "consul" "https://github.com/EMC-Underground/service_consul" "master"
+    add_job "vault" "https://github.com/EMC-Underground/service_vault" "master"
 }
 
 usage="$(basename "$0") [-h] Project Colfax\n
