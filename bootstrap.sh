@@ -454,6 +454,9 @@ set_swarm_pipeline() {
     printf "${cyan}Unpausing the build pipeline.... ${reset}"
     fly --target main unpause-pipeline -p build > /dev/null
     success
+    printf "${cyan}Exposing the build pipeline.... ${reset}"
+    fly --target main expose-pipeline -p build > /dev/null
+    success
     printf "${cyan}Triggering the build-swarm job.... ${reset}"
     fly --target main trigger-job --job=build/"$(echo ${jobs[0]} | jq -r .job_name)_job" > /dev/null
     success
