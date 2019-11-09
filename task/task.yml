@@ -17,7 +17,7 @@ run:
   - -c
   - |
     env
-    networks=( "traefik-net" "vault-backend" "vault-secrets" )
+    networks="traefik-net vault-backend vault-secrets"
     for p in $networks
     do
       [ $(docker network inspect ${p}) ]
