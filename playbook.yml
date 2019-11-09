@@ -1,6 +1,6 @@
 ---
-- hosts: 127.0.0.1
-  connection: localhost
+- hosts: all
+  connection: local
   become: true
   vars:
     fly_version: 5.6.0
@@ -86,6 +86,13 @@
     tags:
       - docker
 
+  - name: Creates directory
+    file:
+      path: /etc/systemd/system/docker.service.d
+      state: directory
+    tags:
+      - docker
+
   - name: Add Docker repo
     get_url:
       url: https://download.docker.com/linux/centos/docker-ce.repo
@@ -105,13 +112,6 @@
     package:
       name: docker-ce
       state: present
-    tags:
-      - docker
-
-  - name: Creates directory
-    file:
-      path: /etc/systemd/system/docker.service.d
-      state: directory
     tags:
       - docker
 
@@ -157,8 +157,10 @@
     tags:
       - kernel
 
-  - name: Reboot a slow machine that might have lots of updates to apply
-    reboot:
-      reboot_timeout: 3600
+  - name: Restart server
+    command: /sbin/shutdown -r now
+    async: 0
+    poll: 0
+    ignore_errors: true
     tags:
       - kernel

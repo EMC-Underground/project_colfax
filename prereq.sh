@@ -3,6 +3,7 @@
 red=`tput setaf 1`
 green=`tput setaf 2`
 reset=`tput sgr0`
+cyan=`tput setaf 6`
 check="\xE2\x9C\x94"
 cross="\xE2\x9C\x98"
 
@@ -65,10 +66,10 @@ apt_steps() {
 }
 
 install_prereqs() {
-    printf "${cyan}Running pre-req install playbook.... ${reset}"
-    curl https://raw.githubusercontent.com/EMC-Underground/project_colfax/${branch}/playbook.yml -o /tmp/playbook.yml > /dev/null 2>&1
-    ansible-playbook /tmp/playbook.yml --tags $install_tags
+    printf "${cyan}Kickoff ${branch} pre-req install playbook.... ${reset}"
     success
+    curl https://raw.githubusercontent.com/EMC-Underground/project_colfax/${branch}/playbook.yml -o /tmp/playbook.yml > /dev/null 2>&1
+    ansible-playbook /tmp/playbook.yml --inventory=127.0.0.1, --tags $install_tags
 }
 
 cleanup() {
@@ -89,4 +90,7 @@ install_tags=$1
 [ $2 ] && branch=$2
 main
 cleanup
-echo "Please re-run now that pre-reqs are all met"
+if [[ " ${install_tags[@]} " =~ " kernel " ]]
+then
+    exit 0
+fi

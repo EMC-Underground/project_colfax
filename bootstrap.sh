@@ -15,6 +15,7 @@ min_vv="1.2.3"
 min_fv="5.6.0"
 min_jv="1.5"
 min_gv="1.5"
+min_kv="4.0"
 app_version="v0.4.3"
 failed_software=()
 
@@ -27,6 +28,14 @@ check_kernel() {
     printf "${green}${result}\n"
     local maj_ver=`echo $result | cut -d'.' -f1`
     eval $__resultvar="'$maj_ver'"
+}
+
+kernel_checks() {
+    local tool="kernel"
+    local kv=0
+    printf "${cyan}Checking ${tool} version.... "
+    kv=`uname -r | awk -F- '{print $1}'`
+    success_version $kv $min_kv $tool
 }
 
 print_check() {
@@ -168,17 +177,7 @@ deploy_concourse() {
     printf "${cyan}Deploying Concourse.... "
     ip=`ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p'`
     export DNS_URL=$ip
-    #export DNS_URL="localhost"
-    case $kernel_version in
-    4|5)
-        export STORAGE_DRIVER=overlay
-        ;;
-    3)
-        export STORAGE_DRIVER=btrfs
-        ;;
-    *)
-        print_cross;;
-    esac
+    export STORAGE_DRIVER=overlay
     cd /tmp/concourse-docker
     docker-compose up -d > /dev/null 2>&1
     success
@@ -214,6 +213,7 @@ cleanup() {
     [ -d "/tmp/concourse-docker" ] && sudo rm -Rf /tmp/concourse-docker > /dev/null 2>&1
     [ -f "/tmp/concourse-policy.hcl" ] && sudo rm /tmp/concourse-policy.hcl > /dev/null 2>&1
     [ -f "/tmp/pipeline.yml" ] && sudo rm /tmp/pipeline.yml > /dev/null 2>&1
+    [ -f "/tmp/vars.yml" ] && sudo rm /tmp/vars.yml > /dev/null 2>&1
     print_check
 }
 
@@ -265,28 +265,63 @@ vault_create_policy() {
     success
 }
 
-pipeline_add_job() {
-    local name=$1 repo_url=$2 repo_branch=$3
-    local resource="  - name: ${name}_repo
+pipeline_build_out() {
+    for (( i=0; i<${#jobs[@]}; i++ ))
+    do
+        local job_name=`echo ${jobs[$i]} | jq -r .job_name`
+        local repo_url=`echo ${jobs[$i]} | jq -r .repo_url`
+        local repo_branch=`echo ${jobs[$i]} | jq -r .repo_branch`
+        local resource="  - name: ${job_name}_repo
     type: git
     source:
       uri: ${repo_url}
       branch: ${repo_branch}"
-    local job="  - name: ${name}_job
+        local job="  - name: ${job_name}_job
     public: true
-    plan:
-      - get: ${name}_repo
-      - task: deploy_${name}
-        file: ${name}_repo/task/task.yml"
-    echo -e "${resource}\n$(cat /tmp/pipeline.yml)" > /tmp/pipeline.yml
-    echo -e "${job}\n" >> /tmp/pipeline.yml
+    serial: true
+    plan:"
+        if [ $i -gt 0 ]
+        then
+            job="${job}
+      - get: timestamp
+        trigger: true
+        passed: [ $(echo ${jobs[$i-1]} | jq -r .job_name)_job ]"
+        fi
+        job="${job}
+      - get: ${job_name}_repo
+      - task: deploy_${job_name}
+        file: ${job_name}_repo/task/task.yml"
+        if [[ $i -lt $((${#jobs[@]}-1)) ]]
+        then
+            job="${job}
+      - put: timestamp"
+        fi
+        echo -e "${resource}\n$(cat /tmp/pipeline.yml)" > /tmp/pipeline.yml
+        echo -e "${job}\n" >> /tmp/pipeline.yml
+    done
+    }
+
+add_job() {
+    local job_name=$1 repo_url=$2 repo_branch=$3
+    local value="{\"job_name\":\"${job_name}\",\"repo_url\":\"${repo_url}\",\"repo_branch\":\"${repo_branch}\"}"
+    jobs=( "${jobs[@]}" $value )
 }
 
+
 build_pipeline() {
+    jobs=()
     printf "${cyan}Creating pipeline definition.... ${reset}"
     echo -e "jobs:" > /tmp/pipeline.yml
-    pipeline_add_job "swarm" "https://github.com/EMC-Underground/ansible_install_dockerswarm" "master"
-    pipeline_add_job "concourse" "https://github.com/EMC-Underground/service_concourse" "master"
+    add_job "swarm" "https://github.com/EMC-Underground/ansible_install_dockerswarm" "master"
+    add_job "network" "https://github.com/EMC-Underground/project_colfax" "dev"
+    add_job "consul" "https://github.com/EMC-Underground/service_consul" "master"
+    pipeline_build_out
+    echo -e "  - name: timestamp
+    type: time
+    source:
+      location: America/Los_Angeles
+      start: 12:00 AM
+      stop: 12:00 AM\n$(cat /tmp/pipeline.yml)" > /tmp/pipeline.yml
     echo -e "resources:\n$(cat /tmp/pipeline.yml)" > /tmp/pipeline.yml
     echo -e "---\n$(cat /tmp/pipeline.yml)" > /tmp/pipeline.yml
     [ -f /tmp/pipeline.yml ]
@@ -331,30 +366,22 @@ capture_num_servers() {
 
 input_server_ips() {
     printf "${magenta}Enter server IP addresses\n"
-    local __resultvar=$1
     local i=0
-    local servers=()
     while [[ $i -lt $2 ]]
     do
         printf "${magenta}Server[${i}]: ${reset}"
         read ip$i
         eval p="\$ip${i}"
-        valid_ip $p
-        if [ $? -ne 0 ]
-        then
-            echo "${red}Please enter a valid IP Address"
-        else
-            [[ " ${servers[@]} " =~ " ${p} " ]] && echo "${red}Please enter a unique IP Address"
-            [[ ! " ${servers[@]} " =~ " ${p} " ]] && servers[$i]=$p && ((i++)) && continue
-        fi
+        validate_ip $p && server_list[$i]=$p && ((i++)) && continue
     done
-    local result=$(join_by , "${servers[@]}")
-    eval $__resultvar="'$result'"
 }
 
-capture_server_ips() {
-    local list=()
-    echo "test"
+validate_ip() {
+    local server=$1
+    [[ " ${server_list[@]} " =~ " ${server} " ]] && echo "${red}Please enter unique IP's${reset}" && return 1
+    valid_ip $server
+    [ $? -ne 0 ] && echo "${red}Please enter valid IP's${reset}" && return 1
+    return 0
 }
 
 capture_username() {
@@ -393,7 +420,7 @@ function valid_ip() {
 
 concourse_login() {
     printf "${cyan}Logging in to concourse.... "
-    sleep 2
+    sleep 4
     local i=0
     local o=0
     while [[ $i -lt 1 ]]
@@ -402,6 +429,7 @@ concourse_login() {
         if [ $? -eq 0 ]
         then
             success
+            sleep 1
             ((i++))
         else
             ((o++))
@@ -429,7 +457,7 @@ set_swarm_pipeline() {
     fly --target main unpause-pipeline -p build > /dev/null
     success
     printf "${cyan}Triggering the build-swarm job.... ${reset}"
-    fly --target main trigger-job --job=build/swarm_job > /dev/null
+    fly --target main trigger-job --job=build/"$(echo ${jobs[0]} | jq -r .job_name)_job" > /dev/null
     success
 }
 
@@ -459,37 +487,42 @@ software_pre_reqs() {
     fly_checks
     vault_checks
     jq_checks
-    check_kernel kernel_version
-    [ $kernel_version -lt 4 ] && failed_software=( "${failed_software[@]}" "kernel" )
+    kernel_checks
     if [ $versions -eq 1 ]
     then
         printf "${red}\n################### Pre-Reqs not met! ##################${reset}\n\n"
-        printf "Install pre-reqs? [y/n]: "
+        printf "Install/Update pre-reqs? [y/n]: "
         read install
         IFS=","
         case $install in
             "y"|"yes")
-                [ $kernel_version -lt 4 ] && echo "Kernel update required. \
-                    This machine will reboot after pre-req's are isntalled\n"
-                bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/master/prereq.sh) "${failed_software[*]}"
+                if [[ " ${failed_software[@]} " =~ " kernel " ]]
+                then
+                    printf "\nKernel update required.\n"
+                    printf "This machine will reboot after pre-req's are installed\n"
+                    printf "Please restart the bootstrap script once complete\n\n"
+                fi
+                bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) "${failed_software[*]}" dev
+                failed_software=()
+                software_pre_reqs
                 ;;
             "n"|"no")
                 printf "${green}This command will run an Ansible Playbook to install\n"
-                printf "all pre-requisite software (inc. Ansible)\n\n"
-                echo "bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/master/prereq.sh) ${failed_software[*]}"
+                printf "all pre-requisite software (inc. Ansible)\n\n${reset}"
+                printf "bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) ${failed_software[*]} dev\n\n"
+                exit 0
                 ;;
         esac
-        exit 0
     fi
     printf "\n${green}All Pre-Reqs met!${reset}\n\n"
 }
 
 capture_data() {
-    capture_num_servers num_servers
+    [ ${#server_list[@]} -eq 0 ] && capture_num_servers num_servers
     [ ${#server_list[@]} -eq 0 ] && input_server_ips server_list $num_servers
-    capture_username user_name
-    capture_password password
-    capture_ntp_server ntp_server
+    [ -z ${user_name+x} ] && capture_username user_name
+    [ -z ${password+x} ] && capture_password password
+    [ -z ${ntp_server+x} ] && capture_ntp_server ntp_server
 }
 
 vault_setup() {
@@ -507,7 +540,9 @@ vault_setup() {
     create_vault_secret "concourse/main/build/" "password" $password
     create_vault_secret "concourse/main/build/" "user_name" $user_name
     create_vault_secret "concourse/main/build/" "ntp_server" $ntp_server
-    create_vault_secret "concourse/main/build/" "server_list" $server_list
+    create_vault_secret "concourse/main/build/" "server_list" $(join_by "," ${server_list[@]})
+    create_vault_secret "concourse/main/build/" "dnssuffix" ${server_list[0]}.xip.io
+    create_vault_secret "concourse/main/build/" "dockerhost" ${server_list[0]}
 }
 
 concourse_setup() {
@@ -534,8 +569,8 @@ print_finale() {
     printf "\n"
     printf "${blue}#################### ${magenta}SWARM INFO ${blue}######################\n"
     printf "${blue}##              ${magenta}If running from a remote CLI\n"
-    printf "${blue}##              ${green}export DOCKER_HOST=${server_list[0]}\n"
-    printf "${blue}##             ${magenta}Proxy URL: ${green}https://proxy.${server_list[0]}.xip.io\n"
+    printf "${blue}##           ${green}export DOCKER_HOST=${server_list[0]}\n"
+    printf "${blue}##         ${magenta}Proxy URL: ${green}https://proxy.${server_list[0]}.xip.io\n"
     printf "${blue}##########################################################${reset}\n"
 }
 
@@ -548,9 +583,19 @@ main() {
     concourse_setup
 }
 
+usage="$(basename "$0") [-h] Project Colfax\n
+An IaC platform for Dell Technology offerings.\n\n
+Options:\n
+    [ --servers | -s ]      Comma delimited list of servers where the platform will deploy\n
+    [ --username | -u ]     Username used to deploy the platform on the nodes provided\n
+    [ --password | -p ]     Password used to deploy the platform on the nodes provided\n
+    [ --ntp | -n ]          NTP Server to use on the nodes provided\n
+    [ destroy | --destroy ] Destroy and cleanup the local bootstrap"
+
 server_list=()
 for arg in $@
 do
+    shift
     case $arg in
         "destroy"|"--destroy"|"-d")
             print_title
@@ -558,7 +603,34 @@ do
             destroy
             exit 0
             ;;
-        "servers"|"--servers"|"-s")
+        "--servers"|"-s")
+            servers=$1
+            pre_server_list=( ${servers//,/ } )
+            server_count=${#pre_server_list[@]}
+            [ $((server_count%2)) -eq 0 ] && echo "${red}Please enter an odd number of servers" && exit 1
+            for item in ${pre_server_list[@]}
+            do
+                validate_ip $item
+                [ $? -ne 0 ] && echo "${green}Example: --servers 10.0.0.10,10.0.0.11,10.0.0.12${reset}" && exit 1
+                server_list=( "${server_list[@]}" $item )
+            done
+            shift
+            ;;
+        "--username"|"-u"|"--user")
+            user_name=$1
+            shift
+            ;;
+        "--password"|"-p"|"--pass")
+            password=$1
+            shift
+            ;;
+        "--ntp"|"-n"|"--ntpserver")
+            ntp_server=$1
+            shift
+            ;;
+        "--help"|"-h")
+            echo -e $usage
+            exit 0
             ;;
         *)
             ;;
