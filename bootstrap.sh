@@ -313,7 +313,7 @@ build_pipeline() {
     printf "${cyan}Creating pipeline definition.... ${reset}"
     echo -e "jobs:" > /tmp/pipeline.yml
     add_job "swarm" "https://github.com/EMC-Underground/ansible_install_dockerswarm" "master"
-    add_job "network" "https://github.com/EMC-Underground/project_colfax" "dev"
+    add_job "network" "https://github.com/EMC-Underground/project_colfax" "master"
     add_job "consul" "https://github.com/EMC-Underground/service_consul" "master"
     pipeline_build_out
     echo -e "  - name: timestamp
