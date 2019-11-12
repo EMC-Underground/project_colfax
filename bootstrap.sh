@@ -351,11 +351,11 @@ vault_login() {
     do
         vault login -address=http://localhost:8200 $root_token > /dev/null
         echo "Return code: ${?}"
-        if [[ $? -eq 0 ]]
+        if [ $? -eq 0 ]
         then
             ((i++))
         else
-            if [ $o -eq 4 ]
+            if [ $o -ne 2 ]
             then
                 success
                 ((i++))
