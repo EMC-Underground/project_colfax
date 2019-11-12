@@ -350,7 +350,6 @@ vault_login() {
     while [[ $i -lt 1 ]]
     do
         vault login -address=http://localhost:8200 $root_token > /dev/null
-        echo "Return code: ${?}"
         if [ $? -eq 0 ]
         then
             ((i++))
