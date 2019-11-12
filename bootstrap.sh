@@ -224,9 +224,10 @@ vault_init() {
     local o=0
     while [[ $i -lt 1 ]]
     do
-        vault operator init -address=http://localhost:8200 -status > /dev/null 2>&1
+        vault operator init -address=http://localhost:8200 -status
         if [[ $? -eq 2 || $? -eq 0 ]]
         then
+            echo "Init Return Code: ${?}"
             ((i++))
         else
             if [ $o -eq 4 ]
