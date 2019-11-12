@@ -245,8 +245,9 @@ vault_init() {
 }
 
 vault_unseal() {
+    local root_token=$1
     printf "${cyan}Unsealing the vault.... ${reset}"
-    vault operator unseal -address=http://localhost:8200 $1 > /dev/null 2>&1
+    vault operator unseal -address=http://localhost:8200 $root_token > /dev/null 2>&1
     success
 }
 
@@ -335,14 +336,16 @@ vault_create_token() {
 }
 
 vault_login() {
+    local root_token=$1
+    echo $root_token
     printf "${cyan}Logging into vault.... "
-    vault login -address=http://localhost:8200 $1 > /dev/null 2>&1
+    vault login -address=http://localhost:8200 $root_token > /dev/null
     success
 }
 
 create_vault_secret() {
     printf "${cyan}Creating ${2} vault secret.... "
-    vault kv put -address=http://localhost:8200 $1$2 value=$3 > /dev/null 2>&1
+    vault kv put -address=http://localhost:8200 $1$2 value=$3 > /dev/null
     success
 }
 
@@ -602,10 +605,10 @@ Options:\n
     [ destroy | --destroy ] Destroy and cleanup the local bootstrap"
 
 server_list=()
-for arg in $@
+while [[ $# -gt 0 ]]
 do
-    shift
-    case $arg in
+    key="$1"
+    case $key in
         "destroy"|"--destroy"|"-d")
             print_title
             cleanup
@@ -613,7 +616,7 @@ do
             exit 0
             ;;
         "--servers"|"-s")
-            servers=$1
+            servers=$2
             pre_server_list=( ${servers//,/ } )
             server_count=${#pre_server_list[@]}
             [ $((server_count%2)) -eq 0 ] && echo "${red}Please enter an odd number of servers" && exit 1
@@ -624,17 +627,21 @@ do
                 server_list=( "${server_list[@]}" $item )
             done
             shift
+            shift
             ;;
         "--username"|"-u"|"--user")
-            user_name=$1
+            user_name=$2
+            shift
             shift
             ;;
         "--password"|"-p"|"--pass")
-            password=$1
+            password=$2
+            shift
             shift
             ;;
         "--ntp"|"-n"|"--ntpserver")
-            ntp_server=$1
+            ntp_server=$2
+            shift
             shift
             ;;
         "--help"|"-h")
