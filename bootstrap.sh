@@ -335,11 +335,36 @@ vault_create_token() {
     eval $__resultvar="'$result'"
 }
 
+#vault_login() {
+#    local root_token=$1
+#    echo $root_token
+#    printf "${cyan}Logging into vault.... "
+#    vault login -address=http://localhost:8200 $root_token > /dev/null
+#    success
+#}
 vault_login() {
     local root_token=$1
-    echo $root_token
-    printf "${cyan}Logging into vault.... "
-    vault login -address=http://localhost:8200 $root_token > /dev/null
+    printf "${cyan}Logging into Vault.... "
+    local i=0
+    local o=0
+    while [[ $i -lt 1 ]]
+    do
+        vault login -address=http://localhost:8200 $root_token > /dev/null
+        echo "Return code: ${?}"
+        if [[ $? -eq 2 || $? -eq 0 ]]
+        then
+            ((i++))
+        else
+            if [ $o -eq 4 ]
+            then
+                success
+                ((i++))
+            else
+                ((o++))
+                sleep 2
+            fi
+        fi
+    done
     success
 }
 
