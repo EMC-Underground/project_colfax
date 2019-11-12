@@ -356,10 +356,9 @@ vault_login() {
         then
             ((i++))
         else
-            if [ $o -ne 4 ]
+            if [ $o -eq 4 ]
             then
                 success
-                ((i++))
             else
                 ((o++))
                 sleep 2
