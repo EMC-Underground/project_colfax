@@ -224,10 +224,9 @@ vault_init() {
     local o=0
     while [[ $i -lt 1 ]]
     do
-        vault operator init -address=http://localhost:8200 -status
+        vault operator init -address=http://localhost:8200 -status > /dev/null
         if [[ $? -eq 2 || $? -eq 0 ]]
         then
-            echo "Init Return Code: ${?}"
             ((i++))
         else
             if [ $o -eq 4 ]
@@ -336,13 +335,6 @@ vault_create_token() {
     eval $__resultvar="'$result'"
 }
 
-#vault_login() {
-#    local root_token=$1
-#    echo $root_token
-#    printf "${cyan}Logging into vault.... "
-#    vault login -address=http://localhost:8200 $root_token > /dev/null
-#    success
-#}
 vault_login() {
     local root_token=$1
     printf "${cyan}Logging into Vault.... "
@@ -351,7 +343,6 @@ vault_login() {
     while [[ $i -lt 1 ]]
     do
         local ha_mode=`vault status -address=http://localhost:8200 | grep "HA Mode" | awk '{print $3}'`
-        echo $ha_mode
         if [ $ha_mode == "active" ]
         then
             ((i++))
