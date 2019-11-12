@@ -350,12 +350,13 @@ vault_login() {
     local o=0
     while [[ $i -lt 1 ]]
     do
-        vault login -address=http://localhost:8200 $root_token > /dev/null
-        if [ $? -eq 0 ]
+        local ha_mode=`vault status -address=http://localhost:8200 | grep "HA Mode" | awk '{print $3}'`
+        echo $ha_mode
+        if [ $ha_mode == "active" ]
         then
             ((i++))
         else
-            if [ $o -ne 2 ]
+            if [ $o -ne 4 ]
             then
                 success
                 ((i++))
@@ -365,6 +366,7 @@ vault_login() {
             fi
         fi
     done
+    vault login -address=http://localhost:8200 $root_token > /dev/null
     success
 }
 
