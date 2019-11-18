@@ -158,6 +158,12 @@ git_checks() {
 
 pull_repo() {
     local repo_url=$1 repo_name=`echo $1 | awk -F'/' '{print $NF}' | awk -F'.' '{print $1}'`
+    if [ $ssh_repos -eq 0 ]
+    then
+        USER=`echo $repo_url | sed -Ene's#https://github.com/([^/]*)/(.*).git#\1#p'`
+        repo_url="git@github.com:${USER}/${repo_name}.git"
+        echo $repo_url
+    fi
     printf "${cyan}Cloning ${repo_name} repo.... "
     if [ -d "/tmp/${repo_name}" ]
     then
@@ -622,6 +628,7 @@ Options:\n
     [ destroy | --destroy ] Destroy and cleanup the local bootstrap"
 
 server_list=()
+ssh_repos=1
 while [[ $# -gt 0 ]]
 do
     key="$1"
@@ -658,6 +665,11 @@ do
             ;;
         "--ntp"|"-n"|"--ntpserver")
             ntp_server=$2
+            shift
+            shift
+            ;;
+        "--ssh")
+            ssh_repos=0
             shift
             shift
             ;;
