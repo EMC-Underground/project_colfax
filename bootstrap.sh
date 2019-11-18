@@ -611,7 +611,7 @@ main() {
 }
 
 pipeline_jobs() {
-    add_job "swarm" "https://github.com/EMC-Underground/ansible_install_dockerswarm" "master"
+    add_job "swarm" "https://github.com/EMC-Underground/ansible_install_dockerswarm" "dev"
     add_job "network" "https://github.com/EMC-Underground/project_colfax" "dev"
     add_job "proxy" "https://github.com/EMC-Underground/service_proxy" "master"
     add_job "consul" "https://github.com/EMC-Underground/service_consul" "master"
