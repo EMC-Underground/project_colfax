@@ -366,7 +366,7 @@ vault_login() {
 create_vault_secret() {
     local team=$1 pipeline=$2 secret=$3
     printf "${cyan}Creating ${2} vault secret.... "
-    echo "$secret" | vault kv put -address=http://localhost:8200 $team$pipeline value=- > /dev/null
+    echo -n "$secret" | vault kv put -address=http://localhost:8200 $team$pipeline value=- > /dev/null
     success
 }
 
