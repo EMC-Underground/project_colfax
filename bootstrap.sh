@@ -16,7 +16,7 @@ min_fv="5.6.0"
 min_jv="1.5"
 min_gv="1.5"
 min_kv="4.0"
-app_version="v0.4.3"
+app_version="v0.5.0"
 failed_software=()
 
 function version { echo "$@" | awk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'; }
@@ -158,12 +158,6 @@ git_checks() {
 
 pull_repo() {
     local repo_url=$1 repo_name=`echo $1 | awk -F'/' '{print $NF}' | awk -F'.' '{print $1}'`
-    if [ $ssh_repos -eq 0 ]
-    then
-        USER=`echo $repo_url | sed -Ene's#https://github.com/([^/]*)/(.*).git#\1#p'`
-        repo_url="git@github.com:${USER}/${repo_name}.git"
-        echo $repo_url
-    fi
     printf "${cyan}Cloning ${repo_name} repo.... "
     if [ -d "/tmp/${repo_name}" ]
     then
@@ -218,7 +212,7 @@ cleanup() {
     [ -d "/tmp/vault-consul-docker" ] && sudo rm -Rf /tmp/vault-consul-docker > /dev/null 2>&1
     [ -d "/tmp/concourse-docker" ] && sudo rm -Rf /tmp/concourse-docker > /dev/null 2>&1
     [ -f "/tmp/concourse-policy.hcl" ] && sudo rm /tmp/concourse-policy.hcl > /dev/null 2>&1
-    [ -f "/tmp/pipeline.yml" ] && sudo rm /tmp/pipeline.yml > /dev/null 2>&1
+    #[ -f "/tmp/pipeline.yml" ] && sudo rm /tmp/pipeline.yml > /dev/null 2>&1
     [ -f "/tmp/vars.yml" ] && sudo rm /tmp/vars.yml > /dev/null 2>&1
     print_check
 }
@@ -283,6 +277,9 @@ pipeline_build_out() {
     source:
       uri: ${repo_url}
       branch: ${repo_branch}"
+        [[ $ssh_repos -eq 0 ]] && resource="${resource}
+      private_key: |
+              ((ssh_key))"
         local job="  - name: ${job_name}_job
     public: true
     serial: true
@@ -319,7 +316,7 @@ build_pipeline() {
     jobs=()
     printf "${cyan}Creating pipeline definition.... ${reset}"
     echo -e "jobs:" > /tmp/pipeline.yml
-    pipeline_jobs
+    read_config
     pipeline_build_out
     echo -e "  - name: timestamp
     type: time
@@ -367,8 +364,9 @@ vault_login() {
 }
 
 create_vault_secret() {
+    local team=$1 pipeline=$2 secret=$3
     printf "${cyan}Creating ${2} vault secret.... "
-    vault kv put -address=http://localhost:8200 $1$2 value=$3 > /dev/null
+    echo "$secret" | vault kv put -address=http://localhost:8200 $team$pipeline value=- > /dev/null
     success
 }
 
@@ -525,9 +523,9 @@ software_pre_reqs() {
             "y"|"yes")
                 if [[ " ${failed_software[@]} " =~ " kernel " ]]
                 then
-                    printf "\nKernel update required.\n"
-                    printf "This machine will reboot after pre-req's are installed\n"
-                    printf "Please restart the bootstrap script once complete\n\n"
+                    printf "${red}\nKernel update required.\n"
+                    printf "${red}This machine will reboot after pre-req's are installed\n"
+                    printf "${red}Please restart the bootstrap script once complete\n\n"
                 fi
                 bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) "${failed_software[*]}" dev
                 failed_software=()
@@ -553,7 +551,7 @@ capture_data() {
 }
 
 vault_setup() {
-    pull_repo "https://github.com/EMC-Underground/vault-consul-docker.git"
+    pull_repo `generate_repo_url "EMC-Underground" "vault-consul-docker"`
     build_deploy_vault
     vault_init keys
     unseal=`echo $keys | jq -r .unseal_keys_b64[0]`
@@ -570,10 +568,11 @@ vault_setup() {
     create_vault_secret "concourse/main/build/" "server_list" $(join_by "," ${server_list[@]})
     create_vault_secret "concourse/main/build/" "dnssuffix" ${server_list[0]}.xip.io
     create_vault_secret "concourse/main/build/" "dockerhost" ${server_list[0]}
+    [[ $ssh_repos -eq 0 ]] && create_vault_secret "concourse/main/build/" "ssh_key" "$ssh_key"
 }
 
 concourse_setup() {
-    pull_repo "https://github.com/EMC-Underground/concourse-docker.git"
+    pull_repo `generate_repo_url "EMC-Underground" "concourse-docker"`
     generate_keys
     deploy_concourse
     build_pipeline
@@ -605,17 +604,61 @@ main() {
     print_title
     software_pre_reqs
     capture_data
+    generate_config
     build_docker_network
     vault_setup
     concourse_setup
 }
 
-pipeline_jobs() {
-    add_job "swarm" "https://github.com/EMC-Underground/ansible_install_dockerswarm" "dev"
-    add_job "network" "https://github.com/EMC-Underground/project_colfax" "dev"
-    add_job "proxy" "https://github.com/EMC-Underground/service_proxy" "master"
-    add_job "consul" "https://github.com/EMC-Underground/service_consul" "master"
-    add_job "vault" "https://github.com/EMC-Underground/service_vault" "master"
+generate_repo_url() {
+    local repo_user=$1 repo_name=$2
+    if [[ ssh_repos -eq 0 ]]
+    then
+        printf "git@github.com:${repo_user}/${repo_name}.git"
+    else
+        printf "https://github.com/${repo_user}/${repo_name}.git"
+    fi
+}
+
+generate_config() {
+    printf "${cyan}Checking for config file.... "
+    [ ! -d $HOME/.colfax ] && mkdir $HOME/.colfax
+    if [ ! -f $HOME/.colfax/config.json ]
+    then
+        echo "[" > $HOME/.colfax/config.json
+        echo "`generate_json_pipeline_job "swarm" "EMC-Underground" "ansible_install_dockerswarm" "dev"`," >> $HOME/.colfax/config.json
+        echo "`generate_json_pipeline_job "network" "EMC-Underground" "project_colfax" "dev"`," >> $HOME/.colfax/config.json
+        echo "`generate_json_pipeline_job "proxy" "EMC-Underground" "service_proxy" "master"`," >> $HOME/.colfax/config.json
+        echo "`generate_json_pipeline_job "consul" "EMC-Underground" "service_consul" "master"`," >> $HOME/.colfax/config.json
+        echo "`generate_json_pipeline_job "vault" "EMC-Underground" "service_vault" "master"`" >> $HOME/.colfax/config.json
+        echo "]" >> $HOME/.colfax/config.json
+    fi
+    success
+}
+
+generate_json_pipeline_job() {
+    local name=$1 repo_user=$2 repo_name=$3 repo_branch=$4
+    printf "    {
+        \"job_name\": \"${name}\",
+        \"repo_user\": \"${repo_user}\",
+        \"repo_name\": \"${repo_name}\",
+        \"repo_branch\": \"${repo_branch}\"
+    }"
+}
+
+read_config() {
+    local config_file=$HOME/.colfax/config.json config="" job_length=0
+    [ $1 ] && config_file=$1
+    config="$(<$config_file)"
+    job_length=`echo "$config" | jq '. | length'`
+    for (( i=0; i<${job_length}; i++ ))
+    do
+        local job_name=`echo "$config" | jq -r .[$i].job_name`
+        local repo_user=`echo "$config" | jq -r .[$i].repo_user`
+        local repo_name=`echo "$config" | jq -r .[$i].repo_name`
+        local repo_branch=`echo "$config" | jq -r .[$i].repo_branch`
+        add_job $job_name `generate_repo_url $repo_user $repo_name` $repo_branch
+    done
 }
 
 usage="$(basename "$0") [-h] Project Colfax\n
@@ -625,10 +668,16 @@ Options:\n
     [ --username | -u ]     Username used to deploy the platform on the nodes provided\n
     [ --password | -p ]     Password used to deploy the platform on the nodes provided\n
     [ --ntp | -n ]          NTP Server to use on the nodes provided\n
-    [ destroy | --destroy ] Destroy and cleanup the local bootstrap"
+    [ --enable-ssh-repos ]  Any repositories used will use their ssh address. Requires SSH private key\n
+    [ --ssh-private-key ]   Path to your github private key (Default: $HOME/.ssh/id_rsa)\n
+    [ --config ]            Path to your config file\n
+    [ --generate-config ]   Create config file example\n
+    [ destroy | --destroy ] Destroy and cleanup the local bootstrap leaves platform"
 
 server_list=()
 ssh_repos=1
+#Setting default key location
+ssh_key="$(<~/.ssh/id_rsa)"
 while [[ $# -gt 0 ]]
 do
     key="$1"
@@ -637,6 +686,11 @@ do
             print_title
             cleanup
             destroy
+            exit 0
+            ;;
+        "generate-config"|"--generate-config")
+            print_title
+            generate_config
             exit 0
             ;;
         "--servers"|"-s")
@@ -668,8 +722,12 @@ do
             shift
             shift
             ;;
-        "--ssh")
+        "--enable-ssh-repos")
             ssh_repos=0
+            shift
+            ;;
+        "--ssh-private-key")
+            ssh_key="$(<$2)"
             shift
             shift
             ;;
