@@ -568,7 +568,7 @@ vault_setup() {
     create_vault_secret "concourse/main/build/" "server_list" $(join_by "," ${server_list[@]})
     create_vault_secret "concourse/main/build/" "dnssuffix" ${server_list[0]}.xip.io
     create_vault_secret "concourse/main/build/" "dockerhost" ${server_list[0]}
-    [[ $ssh_repos -eq 0 ]] && create_vault_secret "concourse/main/build/" "ssh_key" "$ssh_key"
+    [[ $ssh_repos -eq 0 ]] && ssh_key_value="$(<$ssh_key)" && create_vault_secret "concourse/main/build/" "ssh_key" "$ssh_key_value"
 }
 
 concourse_setup() {
@@ -605,6 +605,7 @@ main() {
     software_pre_reqs
     capture_data
     generate_config
+    [[ $ssh_repos -eq 0 ]] && check_ssh_key
     build_docker_network
     vault_setup
     concourse_setup
@@ -620,6 +621,12 @@ generate_repo_url() {
     fi
 }
 
+check_ssh_key() {
+    printf "${cyan}Checking for SSH key.... "
+    [ -f $ssh_key ]
+    success
+}
+
 generate_config() {
     printf "${cyan}Checking for config file.... "
     [ ! -d $HOME/.colfax ] && mkdir $HOME/.colfax
@@ -633,6 +640,7 @@ generate_config() {
         echo "`generate_json_pipeline_job "vault" "EMC-Underground" "service_vault" "master"`" >> $HOME/.colfax/config.json
         echo "]" >> $HOME/.colfax/config.json
     fi
+    jq type $HOME/.colfax/config.json > /dev/null
     success
 }
 
@@ -677,7 +685,7 @@ Options:\n
 server_list=()
 ssh_repos=1
 #Setting default key location
-ssh_key="$(<~/.ssh/id_rsa)"
+ssh_key=~/.ssh/id_rsa
 while [[ $# -gt 0 ]]
 do
     key="$1"
@@ -690,7 +698,13 @@ do
             ;;
         "generate-config"|"--generate-config")
             print_title
-            generate_config
+            printf "${red}Generate default config? (yes/no) "
+            read regen
+            if [ $regen == "yes" ]
+            then
+                [ -f $HOME/.colfax/config.json ] && mv $HOME/.colfax/config.json $HOME/.colfax/config.json.orig
+                generate_config
+            fi
             exit 0
             ;;
         "--servers"|"-s")
@@ -727,7 +741,7 @@ do
             shift
             ;;
         "--ssh-private-key")
-            ssh_key="$(<$2)"
+            ssh_key=$2
             shift
             shift
             ;;
