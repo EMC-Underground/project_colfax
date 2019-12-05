@@ -5,3 +5,4 @@ pipeline.yml
 *.retry
 Vagrantfile
 .vagrant
+*key*
