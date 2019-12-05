@@ -17,7 +17,9 @@ run:
   - -c
   - |
     networks="traefik-net vault-backend vault-secrets"
+    echo $networks
     for p in $networks
+    echo $p
     do
       [ $(docker network inspect $p) ]
       if [ $? -eq 0 ]
