@@ -16,7 +16,6 @@ run:
   args:
   - -c
   - |
-    env
     networks="traefik-net vault-backend vault-secrets"
     for p in $networks
     do
