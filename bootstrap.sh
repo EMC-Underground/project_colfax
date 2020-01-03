@@ -669,19 +669,21 @@ read_config() {
     done
 }
 
-usage="$(basename "$0") [-h] Project Colfax\n
-An IaC platform for Dell Technology offerings.\n\n
-Options:\n
-    [ --servers | -s ]      Comma delimited list of servers where the platform will deploy\n
-    [ --username | -u ]     Username used to deploy the platform on the nodes provided\n
-    [ --password | -p ]     Password used to deploy the platform on the nodes provided\n
-    [ --ntp | -n ]          NTP Server to use on the nodes provided\n
-    [ --enable-ssh-repos ]  Any repositories used will use their ssh address. Requires SSH private key\n
-    [ --ssh-private-key ]   Path to your github private key (Default: $HOME/.ssh/id_rsa)\n
-    [ --config ]            Path to your config file\n
-    [ --generate-config ]   Create config file example\n
-    [ destroy | --destroy ] Destroy and cleanup the local bootstrap leaves platform"
-
+usage=$(cat << EOM
+$(basename "$0") [-h] Project Colfax
+An IaC platform for Dell Technology offerings.
+Options:
+    [ --servers | -s ]      Comma delimited list of servers where the platform will deploy
+    [ --username | -u ]     Username used to deploy the platform on the nodes provided
+    [ --password | -p ]     Password used to deploy the platform on the nodes provided
+    [ --ntp | -n ]          NTP Server to use on the nodes provided
+    [ --enable-ssh-repos ]  Any repositories used will use their ssh address. Requires SSH private key
+    [ --ssh-private-key ]   Path to your github private key (Default: $HOME/.ssh/id_rsa)
+    [ --config ]            Path to your config file
+    [ --generate-config ]   Create config file example
+    [ destroy | --destroy ] Destroy and cleanup the local bootstrap leaves platform
+EOM
+)
 server_list=()
 ssh_repos=1
 #Setting default key location
@@ -698,7 +700,7 @@ do
             ;;
         "generate-config"|"--generate-config")
             print_title
-            printf "${red}Generate default config? (yes/no) "
+            printf "${red}Generate default config (This mv any existing config to config.orig)? (yes/no) "
             read regen
             if [ $regen == "yes" ]
             then
@@ -746,7 +748,7 @@ do
             shift
             ;;
         "--help"|"-h")
-            echo -e $usage
+            printf "${usage}\n"
             exit 0
             ;;
         *)

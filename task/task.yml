@@ -17,13 +17,14 @@ run:
   - -c
   - |
     networks="traefik-net vault-backend vault-secrets"
-    echo "creating ${networks}"
+    echo "creating ${networks} overlay networks"
     for p in $networks
     do
-      echo $p
       docker network inspect ${p} > /dev/null
       if [ $? -ne 0 ]
       then
+        printf "Creating ${p} overlay network.... "
         docker network create --driver=overlay ${p}
+        echo "Done"
       fi
     done
