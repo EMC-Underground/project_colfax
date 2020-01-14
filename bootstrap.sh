@@ -703,7 +703,7 @@ do
             ;;
         "generate-config"|"--generate-config")
             print_title
-            printf "${red}Generate default config (This mv any existing config to config.orig)? (yes/no) "
+            printf "${red}Generate default config (This moves any existing config to config.orig)? (yes/no) "
             read regen
             if [ $regen == "yes" ]
             then
