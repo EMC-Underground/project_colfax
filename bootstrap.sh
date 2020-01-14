@@ -568,6 +568,7 @@ vault_setup() {
     create_vault_secret "concourse/main/build/" "server_list" $(join_by "," ${server_list[@]})
     create_vault_secret "concourse/main/build/" "dnssuffix" ${server_list[0]}.xip.io
     create_vault_secret "concourse/main/build/" "dockerhost" ${server_list[0]}
+    create_vault_secret "concourse/main/build/" "tempvaultroottoken" ${roottoken}
     [[ $ssh_repos -eq 0 ]] && ssh_key_value="$(<$ssh_key)" && create_vault_secret "concourse/main/build/" "ssh_key" "$ssh_key_value"
 }
 
