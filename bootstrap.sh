@@ -639,11 +639,11 @@ generate_config() {
         echo "`generate_json_pipeline_job "network" "EMC-Underground" "project_colfax" "dev"`," >> $HOME/.colfax/config.json
         echo "`generate_json_pipeline_job "proxy" "EMC-Underground" "service_proxy" "master"`," >> $HOME/.colfax/config.json
         echo "`generate_json_pipeline_job "consul" "EMC-Underground" "service_consul" "master"`," >> $HOME/.colfax/config.json
-        echo "`generate_json_pipeline_job "vault" "EMC-Underground" "service_vault" "master"`" >> $HOME/.colfax/config.json
+        echo "`generate_json_pipeline_job "vault" "EMC-Underground" "service_vault" "master"`," >> $HOME/.colfax/config.json
         echo "`generate_json_pipeline_job "concourse" "EMC-Underground" "service_concourse" "master"`" >> $HOME/.colfax/config.json
         echo "]" >> $HOME/.colfax/config.json
     fi
-    jq type $HOME/.colfax/config.json > /dev/null
+    jq type $HOME/.colfax/config.json > /dev/null 2>&1
     success
 }
 
