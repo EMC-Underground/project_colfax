@@ -175,8 +175,6 @@ generate_keys() {
 
 deploy_concourse() {
     printf "${cyan}Deploying Concourse.... "
-    ip=`ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p'`
-    export DNS_URL=$ip
     export STORAGE_DRIVER=overlay
     cd /tmp/concourse-docker
     docker-compose up -d > /dev/null 2>&1
@@ -569,6 +567,7 @@ vault_setup() {
     create_vault_secret "concourse/main/build/" "dnssuffix" ${server_list[0]}.xip.io
     create_vault_secret "concourse/main/build/" "dockerhost" ${server_list[0]}
     create_vault_secret "concourse/main/build/" "tempvaultroottoken" ${roottoken}
+    create_vault_secret "concourse/main/build/" "tempvaultip" ${DNS_URL}
     [[ $ssh_repos -eq 0 ]] && ssh_key_value="$(<$ssh_key)" && create_vault_secret "concourse/main/build/" "ssh_key" "$ssh_key_value"
 }
 
@@ -603,6 +602,8 @@ print_finale() {
 
 main() {
     print_title
+    ip=`ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p'`
+    export DNS_URL=$ip
     software_pre_reqs
     capture_data
     generate_config
