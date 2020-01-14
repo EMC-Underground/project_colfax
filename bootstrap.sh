@@ -16,7 +16,7 @@ min_fv="5.6.0"
 min_jv="1.5"
 min_gv="1.5"
 min_kv="4.0"
-app_version="v0.5.0"
+app_version="v0.5.1"
 failed_software=()
 
 function version { echo "$@" | awk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'; }
