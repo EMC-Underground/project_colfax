@@ -594,7 +594,7 @@ print_finale() {
     printf "${blue}##         ${magenta}Password: ${green}test\n"
     printf "${blue}##########################################################${reset}\n"
     printf "\n"
-    printf "${blue}#################### ${magenta}SWARM INFO ${blue}######################\n"
+    printf "${blue}###################### ${magenta}SWARM INFO ${blue}########################\n"
     printf "${blue}##              ${magenta}If running from a remote CLI\n"
     printf "${blue}##           ${green}export DOCKER_HOST=${server_list[0]}\n"
     printf "${blue}##         ${magenta}Proxy URL: ${green}https://proxy.${server_list[0]}.xip.io\n"
