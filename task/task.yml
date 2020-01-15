@@ -16,7 +16,15 @@ run:
   args:
   - -c
   - |
-    env
-    docker network create --driver=overlay traefik-net
-    docker network create --driver=overlay vault-backend
-    docker network create --driver=overlay vault-secrets
+    networks="traefik-net vault-backend vault-secrets"
+    echo "creating ${networks} overlay networks"
+    for p in $networks
+    do
+      docker network inspect ${p} > /dev/null
+      if [ $? -ne 0 ]
+      then
+        printf "Creating ${p} overlay network.... "
+        docker network create --driver=overlay ${p}
+        echo "Done"
+      fi
+    done

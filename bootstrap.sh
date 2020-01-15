@@ -10,13 +10,13 @@ magenta=`tput setaf 5`
 check="\xE2\x9C\x94"
 cross="\xE2\x9C\x98"
 min_dv="18.09"
-min_dcv="1.24"
-min_vv="1.2.3"
-min_fv="5.6.0"
+min_dcv="1.25"
+min_vv="1.3.1"
+min_fv="5.8.0"
 min_jv="1.5"
 min_gv="1.5"
 min_kv="4.0"
-app_version="v0.4.3"
+app_version="v0.5.1"
 failed_software=()
 
 function version { echo "$@" | awk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'; }
@@ -175,8 +175,6 @@ generate_keys() {
 
 deploy_concourse() {
     printf "${cyan}Deploying Concourse.... "
-    ip=`ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p'`
-    export DNS_URL=$ip
     export STORAGE_DRIVER=overlay
     cd /tmp/concourse-docker
     docker-compose up -d > /dev/null 2>&1
@@ -245,8 +243,9 @@ vault_init() {
 }
 
 vault_unseal() {
+    local root_token=$1
     printf "${cyan}Unsealing the vault.... ${reset}"
-    vault operator unseal -address=http://localhost:8200 $1 > /dev/null 2>&1
+    vault operator unseal -address=http://localhost:8200 $root_token > /dev/null 2>&1
     success
 }
 
@@ -276,6 +275,9 @@ pipeline_build_out() {
     source:
       uri: ${repo_url}
       branch: ${repo_branch}"
+        [[ $ssh_repos -eq 0 ]] && resource="${resource}
+      private_key: |
+              ((ssh_key))"
         local job="  - name: ${job_name}_job
     public: true
     serial: true
@@ -312,9 +314,7 @@ build_pipeline() {
     jobs=()
     printf "${cyan}Creating pipeline definition.... ${reset}"
     echo -e "jobs:" > /tmp/pipeline.yml
-    add_job "swarm" "https://github.com/EMC-Underground/ansible_install_dockerswarm" "master"
-    add_job "network" "https://github.com/EMC-Underground/project_colfax" "master"
-    add_job "consul" "https://github.com/EMC-Underground/service_consul" "master"
+    read_config
     pipeline_build_out
     echo -e "  - name: timestamp
     type: time
@@ -327,7 +327,7 @@ build_pipeline() {
     [ -f /tmp/pipeline.yml ]
     success
 }
-
+https://www.cnn.com/2020/01/14/politics/who-won-the-debate/index.html
 vault_create_token() {
     printf "${cyan}Create vault service account.... "
     local __resultvar=$1
@@ -337,14 +337,34 @@ vault_create_token() {
 }
 
 vault_login() {
-    printf "${cyan}Logging into vault.... "
-    vault login -address=http://localhost:8200 $1 > /dev/null 2>&1
+    local root_token=$1
+    printf "${cyan}Logging into Vault.... "
+    local i=0
+    local o=0
+    while [[ $i -lt 1 ]]
+    do
+        local ha_mode=`vault status -address=http://localhost:8200 | grep "HA Mode" | awk '{print $3}'`
+        if [ $ha_mode == "active" ]
+        then
+            ((i++))
+        else
+            if [ $o -eq 4 ]
+            then
+                success
+            else
+                ((o++))
+                sleep 2
+            fi
+        fi
+    done
+    vault login -address=http://localhost:8200 $root_token > /dev/null
     success
 }
 
 create_vault_secret() {
+    local team=$1 pipeline=$2 secret=$3
     printf "${cyan}Creating ${2} vault secret.... "
-    vault kv put -address=http://localhost:8200 $1$2 value=$3 > /dev/null 2>&1
+    echo -n "$secret" | vault kv put -address=http://localhost:8200 $team$pipeline value=- > /dev/null
     success
 }
 
@@ -456,6 +476,9 @@ set_swarm_pipeline() {
     printf "${cyan}Unpausing the build pipeline.... ${reset}"
     fly --target main unpause-pipeline -p build > /dev/null
     success
+    printf "${cyan}Exposing the build pipeline.... ${reset}"
+    fly --target main expose-pipeline -p build > /dev/null
+    success
     printf "${cyan}Triggering the build-swarm job.... ${reset}"
     fly --target main trigger-job --job=build/"$(echo ${jobs[0]} | jq -r .job_name)_job" > /dev/null
     success
@@ -498,9 +521,9 @@ software_pre_reqs() {
             "y"|"yes")
                 if [[ " ${failed_software[@]} " =~ " kernel " ]]
                 then
-                    printf "\nKernel update required.\n"
-                    printf "This machine will reboot after pre-req's are installed\n"
-                    printf "Please restart the bootstrap script once complete\n\n"
+                    printf "${red}\nKernel update required.\n"
+                    printf "${red}This machine will reboot after pre-req's are installed\n"
+                    printf "${red}Please restart the bootstrap script once complete\n\n"
                 fi
                 bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/master/prereq.sh) "${failed_software[*]}"
                 failed_software=()
@@ -526,7 +549,7 @@ capture_data() {
 }
 
 vault_setup() {
-    pull_repo "https://github.com/EMC-Underground/vault-consul-docker.git"
+    pull_repo `generate_repo_url "github.com" "EMC-Underground" "vault-consul-docker"`
     build_deploy_vault
     vault_init keys
     unseal=`echo $keys | jq -r .unseal_keys_b64[0]`
@@ -543,10 +566,13 @@ vault_setup() {
     create_vault_secret "concourse/main/build/" "server_list" $(join_by "," ${server_list[@]})
     create_vault_secret "concourse/main/build/" "dnssuffix" ${server_list[0]}.xip.io
     create_vault_secret "concourse/main/build/" "dockerhost" ${server_list[0]}
+    create_vault_secret "concourse/main/build/" "tempvaultroottoken" ${roottoken}
+    create_vault_secret "concourse/main/build/" "tempvaultip" ${DNS_URL}
+    [[ $ssh_repos -eq 0 ]] && ssh_key_value="$(<$ssh_key)" && create_vault_secret "concourse/main/build/" "ssh_key" "$ssh_key_value"
 }
 
 concourse_setup() {
-    pull_repo "https://github.com/EMC-Underground/concourse-docker.git"
+    pull_repo `generate_repo_url "github.com" "EMC-Underground" "concourse-docker"`
     generate_keys
     deploy_concourse
     build_pipeline
@@ -567,7 +593,7 @@ print_finale() {
     printf "${blue}##         ${magenta}Password: ${green}test\n"
     printf "${blue}##########################################################${reset}\n"
     printf "\n"
-    printf "${blue}#################### ${magenta}SWARM INFO ${blue}######################\n"
+    printf "${blue}###################### ${magenta}SWARM INFO ${blue}########################\n"
     printf "${blue}##              ${magenta}If running from a remote CLI\n"
     printf "${blue}##           ${green}export DOCKER_HOST=${server_list[0]}\n"
     printf "${blue}##         ${magenta}Proxy URL: ${green}https://proxy.${server_list[0]}.xip.io\n"
@@ -576,35 +602,120 @@ print_finale() {
 
 main() {
     print_title
+    ip=`ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p'`
+    export DNS_URL=$ip
     software_pre_reqs
     capture_data
+    generate_config
+    [[ $ssh_repos -eq 0 ]] && check_ssh_key
     build_docker_network
     vault_setup
     concourse_setup
 }
 
-usage="$(basename "$0") [-h] Project Colfax\n
-An IaC platform for Dell Technology offerings.\n\n
-Options:\n
-    [ --servers | -s ]      Comma delimited list of servers where the platform will deploy\n
-    [ --username | -u ]     Username used to deploy the platform on the nodes provided\n
-    [ --password | -p ]     Password used to deploy the platform on the nodes provided\n
-    [ --ntp | -n ]          NTP Server to use on the nodes provided\n
-    [ destroy | --destroy ] Destroy and cleanup the local bootstrap"
+generate_repo_url() {
+    local src_url=$1 repo_user=$2 repo_name=$3
+    if [[ ssh_repos -eq 0 ]]
+    then
+        printf "git@${src_url}:${repo_user}/${repo_name}.git"
+    else
+        printf "https://${src_url}/${repo_user}/${repo_name}.git"
+    fi
+}
 
+check_ssh_key() {
+    printf "${cyan}Checking for SSH key.... "
+    [ -f $ssh_key ]
+    success
+}
+
+generate_config() {
+    printf "${cyan}Checking for config file.... "
+    [ ! -d $HOME/.colfax ] && mkdir $HOME/.colfax
+    if [ ! -f $HOME/.colfax/config.json ]
+    then
+        echo "[" > $HOME/.colfax/config.json
+        echo "`generate_json_pipeline_job "swarm" "github.com" "EMC-Underground" "ansible_install_dockerswarm" "dev"`," >> $HOME/.colfax/config.json
+        echo "`generate_json_pipeline_job "network" "github.com" "EMC-Underground" "project_colfax" "dev"`," >> $HOME/.colfax/config.json
+        echo "`generate_json_pipeline_job "proxy" "github.com" "EMC-Underground" "service_proxy" "master"`," >> $HOME/.colfax/config.json
+        echo "`generate_json_pipeline_job "consul" "github.com" "EMC-Underground" "service_consul" "master"`," >> $HOME/.colfax/config.json
+        echo "`generate_json_pipeline_job "vault" "github.com" "EMC-Underground" "service_vault" "master"`," >> $HOME/.colfax/config.json
+        echo "`generate_json_pipeline_job "concourse" "github.com" "EMC-Underground" "service_concourse" "master"`" >> $HOME/.colfax/config.json
+        echo "]" >> $HOME/.colfax/config.json
+    fi
+    jq type $HOME/.colfax/config.json > /dev/null 2>&1
+    success
+}
+
+generate_json_pipeline_job() {
+    local name=$1 src_url=$2 repo_user=$3 repo_name=$4 repo_branch=$5
+    printf "    {
+        \"job_name\": \"${name}\",
+        \"src_url\": \"${src_url}\",
+        \"repo_user\": \"${repo_user}\",
+        \"repo_name\": \"${repo_name}\",
+        \"repo_branch\": \"${repo_branch}\"
+    }"
+}
+
+read_config() {
+    local config_file=$HOME/.colfax/config.json config="" job_length=0
+    [ $1 ] && config_file=$1
+    config="$(<$config_file)"
+    job_length=`echo "$config" | jq '. | length'`
+    for (( i=0; i<${job_length}; i++ ))
+    do
+        local job_name=`echo "$config" | jq -r .[$i].job_name`
+        local src_url=`echo "$config" | jq -r .[$i].src_url`
+        local repo_user=`echo "$config" | jq -r .[$i].repo_user`
+        local repo_name=`echo "$config" | jq -r .[$i].repo_name`
+        local repo_branch=`echo "$config" | jq -r .[$i].repo_branch`
+        add_job $job_name `generate_repo_url $src_url $repo_user $repo_name` $repo_branch
+    done
+}
+
+usage=$(cat << EOM
+$(basename "$0") [-h] Project Colfax
+An IaC platform for Dell Technology offerings.
+Options:
+    [ --servers | -s ]      Comma delimited list of servers where the platform will deploy
+    [ --username | -u ]     Username used to deploy the platform on the nodes provided
+    [ --password | -p ]     Password used to deploy the platform on the nodes provided
+    [ --ntp | -n ]          NTP Server to use on the nodes provided
+    [ --enable-ssh-repos ]  Any repositories used will use their ssh address. Requires SSH private key
+    [ --ssh-private-key ]   Path to your github private key (Default: $HOME/.ssh/id_rsa)
+    [ --config ]            Path to your config file
+    [ --generate-config ]   Create config file example
+    [ destroy | --destroy ] Destroy and cleanup the local bootstrap leaves platform
+EOM
+)
 server_list=()
-for arg in $@
+ssh_repos=1
+#Setting default key location
+ssh_key=~/.ssh/id_rsa
+while [[ $# -gt 0 ]]
 do
-    shift
-    case $arg in
+    key="$1"
+    case $key in
         "destroy"|"--destroy"|"-d")
             print_title
             cleanup
             destroy
             exit 0
             ;;
+        "generate-config"|"--generate-config")
+            print_title
+            printf "${red}Generate default config (This moves any existing config to config.orig)? (yes/no) "
+            read regen
+            if [ $regen == "yes" ]
+            then
+                [ -f $HOME/.colfax/config.json ] && mv $HOME/.colfax/config.json $HOME/.colfax/config.json.orig
+                generate_config
+            fi
+            exit 0
+            ;;
         "--servers"|"-s")
-            servers=$1
+            servers=$2
             pre_server_list=( ${servers//,/ } )
             server_count=${#pre_server_list[@]}
             [ $((server_count%2)) -eq 0 ] && echo "${red}Please enter an odd number of servers" && exit 1
@@ -615,21 +726,34 @@ do
                 server_list=( "${server_list[@]}" $item )
             done
             shift
+            shift
             ;;
         "--username"|"-u"|"--user")
-            user_name=$1
+            user_name=$2
+            shift
             shift
             ;;
         "--password"|"-p"|"--pass")
-            password=$1
+            password=$2
+            shift
             shift
             ;;
         "--ntp"|"-n"|"--ntpserver")
-            ntp_server=$1
+            ntp_server=$2
+            shift
+            shift
+            ;;
+        "--enable-ssh-repos")
+            ssh_repos=0
+            shift
+            ;;
+        "--ssh-private-key")
+            ssh_key=$2
+            shift
             shift
             ;;
         "--help"|"-h")
-            echo -e $usage
+            printf "${usage}\n"
             exit 0
             ;;
         *)

@@ -3,5 +3,6 @@ concourse-docker
 concourse-policy.hcl
 pipeline.yml
 *.retry
-Vagrantfile
+#Vagrantfile
 .vagrant
+*key*
