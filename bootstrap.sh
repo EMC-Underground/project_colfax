@@ -327,7 +327,7 @@ build_pipeline() {
     [ -f /tmp/pipeline.yml ]
     success
 }
-
+https://www.cnn.com/2020/01/14/politics/who-won-the-debate/index.html
 vault_create_token() {
     printf "${cyan}Create vault service account.... "
     local __resultvar=$1
@@ -525,14 +525,14 @@ software_pre_reqs() {
                     printf "${red}This machine will reboot after pre-req's are installed\n"
                     printf "${red}Please restart the bootstrap script once complete\n\n"
                 fi
-                bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) "${failed_software[*]}" dev
+                bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/master/prereq.sh) "${failed_software[*]}"
                 failed_software=()
                 software_pre_reqs
                 ;;
             "n"|"no")
                 printf "${green}This command will run an Ansible Playbook to install\n"
                 printf "all pre-requisite software (inc. Ansible)\n\n${reset}"
-                printf "bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) ${failed_software[*]} dev\n\n"
+                printf "bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/master/prereq.sh) ${failed_software[*]}\n\n"
                 exit 0
                 ;;
         esac
