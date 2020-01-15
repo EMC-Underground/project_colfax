@@ -12,7 +12,7 @@ cross="\xE2\x9C\x98"
 min_dv="18.09"
 min_dcv="1.24"
 min_vv="1.2.3"
-min_fv="5.6.0"
+min_fv="5.8.0"
 min_jv="1.5"
 min_gv="1.5"
 min_kv="4.0"
@@ -614,12 +614,12 @@ main() {
 }
 
 generate_repo_url() {
-    local repo_user=$1 repo_name=$2
+    local src_url=$1 repo_user=$2 repo_name=$3
     if [[ ssh_repos -eq 0 ]]
     then
-        printf "git@github.com:${repo_user}/${repo_name}.git"
+        printf "git@${src_url}:${repo_user}/${repo_name}.git"
     else
-        printf "https://github.com/${repo_user}/${repo_name}.git"
+        printf "https://${src_url}/${repo_user}/${repo_name}.git"
     fi
 }
 
@@ -635,12 +635,12 @@ generate_config() {
     if [ ! -f $HOME/.colfax/config.json ]
     then
         echo "[" > $HOME/.colfax/config.json
-        echo "`generate_json_pipeline_job "swarm" "EMC-Underground" "ansible_install_dockerswarm" "dev"`," >> $HOME/.colfax/config.json
-        echo "`generate_json_pipeline_job "network" "EMC-Underground" "project_colfax" "dev"`," >> $HOME/.colfax/config.json
-        echo "`generate_json_pipeline_job "proxy" "EMC-Underground" "service_proxy" "master"`," >> $HOME/.colfax/config.json
-        echo "`generate_json_pipeline_job "consul" "EMC-Underground" "service_consul" "master"`," >> $HOME/.colfax/config.json
-        echo "`generate_json_pipeline_job "vault" "EMC-Underground" "service_vault" "master"`," >> $HOME/.colfax/config.json
-        echo "`generate_json_pipeline_job "concourse" "EMC-Underground" "service_concourse" "master"`" >> $HOME/.colfax/config.json
+        echo "`generate_json_pipeline_job "swarm" "github.com" "EMC-Underground" "ansible_install_dockerswarm" "dev"`," >> $HOME/.colfax/config.json
+        echo "`generate_json_pipeline_job "network" "github.com" "EMC-Underground" "project_colfax" "dev"`," >> $HOME/.colfax/config.json
+        echo "`generate_json_pipeline_job "proxy" "github.com" "EMC-Underground" "service_proxy" "master"`," >> $HOME/.colfax/config.json
+        echo "`generate_json_pipeline_job "consul" "github.com" "EMC-Underground" "service_consul" "master"`," >> $HOME/.colfax/config.json
+        echo "`generate_json_pipeline_job "vault" "github.com" "EMC-Underground" "service_vault" "master"`," >> $HOME/.colfax/config.json
+        echo "`generate_json_pipeline_job "concourse" "github.com" "EMC-Underground" "service_concourse" "master"`" >> $HOME/.colfax/config.json
         echo "]" >> $HOME/.colfax/config.json
     fi
     jq type $HOME/.colfax/config.json > /dev/null 2>&1
@@ -648,9 +648,10 @@ generate_config() {
 }
 
 generate_json_pipeline_job() {
-    local name=$1 repo_user=$2 repo_name=$3 repo_branch=$4
+    local name=$1 src_url=$2 repo_user=$3 repo_name=$4 repo_branch=$5
     printf "    {
         \"job_name\": \"${name}\",
+        \"src_url\": \"${src_url}\",
         \"repo_user\": \"${repo_user}\",
         \"repo_name\": \"${repo_name}\",
         \"repo_branch\": \"${repo_branch}\"
@@ -665,10 +666,11 @@ read_config() {
     for (( i=0; i<${job_length}; i++ ))
     do
         local job_name=`echo "$config" | jq -r .[$i].job_name`
+        local src_url=`echo "$config" | jq -r .[$i].src_url`
         local repo_user=`echo "$config" | jq -r .[$i].repo_user`
         local repo_name=`echo "$config" | jq -r .[$i].repo_name`
         local repo_branch=`echo "$config" | jq -r .[$i].repo_branch`
-        add_job $job_name `generate_repo_url $repo_user $repo_name` $repo_branch
+        add_job $job_name `generate_repo_url $src_url $repo_user $repo_name` $repo_branch
     done
 }
 
