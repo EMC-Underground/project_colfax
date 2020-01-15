@@ -10,8 +10,8 @@ magenta=`tput setaf 5`
 check="\xE2\x9C\x94"
 cross="\xE2\x9C\x98"
 min_dv="18.09"
-min_dcv="1.24"
-min_vv="1.2.3"
+min_dcv="1.25"
+min_vv="1.3.1"
 min_fv="5.8.0"
 min_jv="1.5"
 min_gv="1.5"
@@ -549,7 +549,7 @@ capture_data() {
 }
 
 vault_setup() {
-    pull_repo `generate_repo_url "EMC-Underground" "vault-consul-docker"`
+    pull_repo `generate_repo_url "github.com" "EMC-Underground" "vault-consul-docker"`
     build_deploy_vault
     vault_init keys
     unseal=`echo $keys | jq -r .unseal_keys_b64[0]`
@@ -572,7 +572,7 @@ vault_setup() {
 }
 
 concourse_setup() {
-    pull_repo `generate_repo_url "EMC-Underground" "concourse-docker"`
+    pull_repo `generate_repo_url "github.com" "EMC-Underground" "concourse-docker"`
     generate_keys
     deploy_concourse
     build_pipeline
