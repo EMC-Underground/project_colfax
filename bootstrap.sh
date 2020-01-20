@@ -19,7 +19,8 @@ min_kv="4.0"
 app_version="v0.5.1"
 failed_software=()
 
-function version { echo "$@" | awk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'; }
+function version { echo "$@" | awk -F. '{ printf("%03d%03d%03d\n",
+                                        $1,$2,$3); }'; }
 
 check_kernel() {
     printf "${cyan}Kernel Version... ${reset}"
@@ -43,17 +44,17 @@ print_check() {
 }
 
 print_version() {
-    local status=$2
+    local current_version=$1 status=$2 required_version=$3
     case $status in
         good)
-            printf "${green}${1}\n${reset}"
+            printf "${green}${current_version}\n${reset}"
             ;;
         bad)
-            if [ $1 == "0" ]
+            if [ $current_version == "0" ]
             then
-                printf "${red}Not Installed | minimum ver. ${3}\n${reset}"
+                printf "${red}Not Installed | minimum ver. ${required_version}\n${reset}"
             else
-                printf "${red}${1} | minimum ver. ${3}\n${reset}"
+                printf "${red}${current_version} | minimum ver. ${required_version}\n${reset}"
             fi
             ;;
     esac
@@ -91,7 +92,7 @@ docker_checks() {
     command -v $tool > /dev/null 2>&1 && [ -x $(command -v $tool) ]
     if [ $? -eq 0 ]
     then
-        dv=`${tool} --version | awk -F'[, ]' '{print $3}'`
+        dv=`${tool} --version | awk -F'[, ]' '{print $3}' | awk -F'[-]' '{print $1}'`
     fi
     success_version $dv $min_dv $tool
 }
@@ -225,14 +226,14 @@ vault_init() {
         vault operator init -address=http://localhost:8200 -status > /dev/null 2>&1
         if [[ $? -eq 2 || $? -eq 0 ]]
         then
-            ((i++))
+            i=$((i+1))
         else
             if [ $o -eq 4 ]
             then
                 success
-                ((i++))
+                i=$((i+1))
             else
-                ((o++))
+                o=$((o+1))
                 sleep 2
             fi
         fi
@@ -346,13 +347,13 @@ vault_login() {
         local ha_mode=`vault status -address=http://localhost:8200 | grep "HA Mode" | awk '{print $3}'`
         if [ $ha_mode == "active" ]
         then
-            ((i++))
+            i=$((i+1))
         else
             if [ $o -eq 4 ]
             then
                 success
             else
-                ((o++))
+                o=$((o+1))
                 sleep 2
             fi
         fi
@@ -392,7 +393,7 @@ input_server_ips() {
         printf "${magenta}Server[${i}]: ${reset}"
         read ip$i
         eval p="\$ip${i}"
-        validate_ip $p && server_list[$i]=$p && ((i++)) && continue
+        validate_ip $p && server_list[$i]=$p && i=$((i+1)) && continue
     done
 }
 
@@ -450,13 +451,13 @@ concourse_login() {
         then
             success
             sleep 1
-            ((i++))
+            i=$((i+1))
         else
-            ((o++))
+            o=$((o+1))
             if [ $o -eq 5 ]
             then
                 success
-                ((i++))
+                i=$((i+1))
             fi
             sleep 2
         fi

@@ -3,7 +3,7 @@ Automation with a single command
 
 Curated and managed through CI/CD
 
-## Deploy >> Ubuntu 16.04/180.4 and Centos 7/8 tested
+## Deploy >> Ubuntu 16.04/18.04 and Centos 7/8 tested
 bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bootstrap.sh)
 
 ## Destroy
