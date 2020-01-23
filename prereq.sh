@@ -49,6 +49,18 @@ apt_checks() {
     eval $__resultvar="'$result'"
 }
 
+ansible_checks() {
+    local tool="ansible-playbook"
+    local __resultvar=$1
+    local result=1
+    command -v $tool > /dev/null 2>&1 && [ -x $(command -v $tool) ]
+    if [ $? -eq 0 ]
+    then
+        result=0
+    fi
+    eval $__resultvar="'$result'"
+}
+
 yum_steps() {
     printf "${cyan}Installing ansible with yum package manager.... ${reset}"
     sudo yum -y install epel-release > /dev/null 2>&1
@@ -77,11 +89,15 @@ cleanup() {
 }
 
 main() {
-    local yum apt
+    local yum apt ansible
     yum_checks yum
     apt_checks apt
-    [ $yum -eq 0 ] && yum_steps
-    [ $apt -eq 0 ] && apt_steps
+    ansible_checks ansible
+    if [ $ansible -ne 0 ]
+    then
+        [ $yum -eq 0 ] && yum_steps
+        [ $apt -eq 0 ] && apt_steps
+    fi
     install_prereqs
 }
 
