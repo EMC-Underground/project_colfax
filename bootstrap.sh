@@ -16,7 +16,7 @@ min_fv="5.8.0"
 min_jv="1.5"
 min_gv="1.5"
 min_kv="4.0"
-app_version="v0.5.1"
+app_version="v0.5.2"
 failed_software=()
 
 function version { echo "$@" | awk -F. '{ printf("%03d%03d%03d\n",
@@ -71,7 +71,7 @@ success() {
     else
         print_cross
         printf "\n${blue}You may artifacts leftover from a previous run.\n"
-        printf "Try running ${green}\"./bootstrap.sh destroy\"${blue} Then try again${reset}\n"
+        printf "Try running ${green}\"bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bootstrap.sh) destroy\"${blue} Then try again${reset}\n"
         exit 1
     fi
 }
