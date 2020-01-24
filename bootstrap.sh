@@ -565,10 +565,10 @@ vault_setup() {
     create_vault_secret "concourse/main/build/" "user_name" $user_name
     create_vault_secret "concourse/main/build/" "ntp_server" $ntp_server
     create_vault_secret "concourse/main/build/" "server_list" $(join_by "," ${server_list[@]})
-    create_vault_secret "concourse/main/build/" "dnssuffix" ${server_list[0]}.xip.io
+    create_vault_secret "concourse/main/build/" "dnssuffix" ${dns_suffix}
     create_vault_secret "concourse/main/build/" "dockerhost" ${server_list[0]}
     create_vault_secret "concourse/main/build/" "tempvaultroottoken" ${roottoken}
-    create_vault_secret "concourse/main/build/" "tempvaultip" ${DNS_URL}
+    create_vault_secret "concourse/main/build/" "tempvaultip" ${ip}
     [[ $ssh_repos -eq 0 ]] && ssh_key_value="$(<$ssh_key)" && create_vault_secret "concourse/main/build/" "ssh_key" "$ssh_key_value"
 }
 
@@ -583,13 +583,13 @@ concourse_setup() {
 
 print_finale() {
     printf "${blue}###################### ${magenta}VAULT INFO ${blue}########################\n"
-    printf "${blue}##              ${magenta}URL: ${green}http://${DNS_URL}:8200\n"
+    printf "${blue}##              ${magenta}URL: ${green}http://${ip}:8200\n"
     printf "${blue}##       ${magenta}Root Token: ${green}${roottoken}\n"
     printf "${blue}##  ${magenta}Concourse Token: ${green}${token}\n"
     printf "${blue}##########################################################\n"
     printf "\n"
     printf "${blue}#################### ${magenta}CONCOURSE INFO ${blue}######################\n"
-    printf "${blue}##              ${magenta}URL: ${green}http://${DNS_URL}:8080\n"
+    printf "${blue}##              ${magenta}URL: ${green}http://${ip}:8080\n"
     printf "${blue}##             ${magenta}User: ${green}test\n"
     printf "${blue}##         ${magenta}Password: ${green}test\n"
     printf "${blue}##########################################################${reset}\n"
@@ -597,7 +597,7 @@ print_finale() {
     printf "${blue}###################### ${magenta}SWARM INFO ${blue}########################\n"
     printf "${blue}##              ${magenta}If running from a remote CLI\n"
     printf "${blue}##           ${green}export DOCKER_HOST=${server_list[0]}\n"
-    printf "${blue}##         ${magenta}Proxy URL: ${green}https://proxy.${server_list[0]}.xip.io\n"
+    printf "${blue}##         ${magenta}Proxy URL: ${green}https://proxy.${dns_suffix}\n"
     printf "${blue}##########################################################${reset}\n"
 }
 
@@ -605,6 +605,7 @@ main() {
     print_title
     ip=`ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p'`
     export DNS_URL=$ip
+    [ -z ${dns_suffix+x} ] && dns_suffix="${server_list[0]}.xip.io"
     software_pre_reqs
     capture_data
     generate_config
@@ -746,6 +747,11 @@ do
             ;;
         "--enable-ssh-repos")
             ssh_repos=0
+            shift
+            ;;
+        "--custom-dns-suffix")
+            dns_suffix=$2
+            shift
             shift
             ;;
         "--ssh-private-key")
