@@ -687,6 +687,7 @@ Options:
     [ --enable-ssh-repos ]  Any repositories used will use their ssh address. Requires SSH private key
     [ --ssh-private-key ]   Path to your github private key (Default: $HOME/.ssh/id_rsa)
     [ --config ]            Path to your config file
+    [ --custom-dns-suffix ] Add a custom dns suffix for the reverse proxy to use. (Default: [server_ip].xip.io)
     [ --generate-config ]   Create config file example
     [ destroy | --destroy ] Destroy and cleanup the local bootstrap leaves platform
 EOM
