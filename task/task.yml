@@ -26,5 +26,7 @@ run:
         printf "Creating ${p} overlay network.... "
         docker network create --driver=overlay ${p}
         echo "Done"
+      else
+        echo "${p} already exists"
       fi
     done
