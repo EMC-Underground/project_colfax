@@ -605,9 +605,9 @@ main() {
     print_title
     ip=`ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p'`
     export DNS_URL=$ip
-    [ -z ${dns_suffix+x} ] && dns_suffix="${server_list[0]}.xip.io"
     software_pre_reqs
     capture_data
+    [ -z ${dns_suffix+x} ] && dns_suffix="${server_list[0]}.xip.io"
     generate_config
     [[ $ssh_repos -eq 0 ]] && check_ssh_key
     build_docker_network
