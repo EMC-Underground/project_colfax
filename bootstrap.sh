@@ -690,6 +690,7 @@ Options:
     [ --custom-dns-suffix ] Add a custom dns suffix for the reverse proxy to use. (Default: [server_ip].xip.io)
     [ --generate-config ]   Create config file example
     [ destroy | --destroy ] Destroy and cleanup the local bootstrap leaves platform
+    [ --version | -v ]      Print app current version
 EOM
 )
 server_list=()
@@ -759,6 +760,10 @@ do
             ssh_key=$2
             shift
             shift
+            ;;
+        "--version"|"-v")
+            printf "${app_version}\n"
+            exit 0
             ;;
         "--help"|"-h")
             printf "${usage}\n"
