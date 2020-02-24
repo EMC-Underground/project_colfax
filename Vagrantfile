@@ -35,7 +35,6 @@ Vagrant.configure("2") do |config|
   config.ssh.private_key_path = ['~/.vagrant.d/insecure_private_key', '~/.ssh/id_rsa'] # 2
   config.vm.provision "shell", inline: <<-SHELL
     yum install -y epel-release
-    yum install -y avahi-tools nss-mdns open-vm-tools git vim numactl unzip python3 python-pip sysfsutils
-    systemctl start avahi-daemon
+    yum install -y open-vm-tools git vim numactl unzip python3 python-pip sysfsutils
   SHELL
 end
