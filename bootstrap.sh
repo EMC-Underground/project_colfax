@@ -1,24 +1,9 @@
 #!/bin/bash
 
-# Set Color Variables
-red=`tput setaf 1`
-green=`tput setaf 2`
-reset=`tput sgr0`
-cyan=`tput setaf 6`
-blue=`tput setaf 4`
-magenta=`tput setaf 5`
-check="\xE2\x9C\x94"
-cross="\xE2\x9C\x98"
-min_dv="18.09"
-min_dcv="1.25"
-min_vv="1.3.1"
-min_fv="5.8.0"
-min_jv="1.5"
-min_gv="1.5"
-min_kv="4.0"
-app_version="v0.5.2"
 failed_software=()
-source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/software_checks)
+source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/config)
+source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bin/software_checks)
+source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bin/vault)
 
 pull_repo() {
     local repo_url=$1 repo_name=`echo $1 | awk -F'/' '{print $NF}' | awk -F'.' '{print $1}'`
@@ -42,14 +27,6 @@ deploy_concourse() {
     export STORAGE_DRIVER=overlay
     cd /tmp/concourse-docker
     docker-compose up -d > /dev/null 2>&1
-    success
-    cd - > /dev/null 2>&1
-}
-
-build_deploy_vault() {
-    printf "${cyan}Deploying Vault.... "
-    cd /tmp/vault-consul-docker
-    docker-compose up -d --build > /dev/null 2>&1
     success
     cd - > /dev/null 2>&1
 }
@@ -79,54 +56,6 @@ cleanup() {
     print_check
 }
 
-vault_init() {
-    printf "${cyan}Initializing Vault.... "
-    local  __resultvar=$1
-    local i=0
-    local o=0
-    while [[ $i -lt 1 ]]
-    do
-        vault operator init -address=http://localhost:8200 -status > /dev/null 2>&1
-        if [[ $? -eq 2 || $? -eq 0 ]]
-        then
-            i=$((i+1))
-        else
-            if [ $o -eq 4 ]
-            then
-                success
-                i=$((i+1))
-            else
-                o=$((o+1))
-                sleep 2
-            fi
-        fi
-    done
-    local result=`vault operator init -address=http://localhost:8200 -key-threshold=1 -key-shares=1 -format=json`
-    success
-    eval $__resultvar="'$result'"
-}
-
-vault_unseal() {
-    local root_token=$1
-    printf "${cyan}Unsealing the vault.... ${reset}"
-    vault operator unseal -address=http://localhost:8200 $root_token > /dev/null 2>&1
-    success
-}
-
-vault_create_store() {
-    printf "${cyan}Creating vault secret store.... ${reset}"
-    vault secrets enable -address=http://localhost:8200 -version=1 -path=concourse kv > /dev/null 2>&1
-    success
-}
-
-vault_create_policy() {
-    printf "${cyan}Create vault policy.... ${reset}"
-    echo 'path "concourse/*" {
-  policy = "read"
-}' > /tmp/concourse-policy.hcl
-    vault policy write -address=http://localhost:8200 concourse /tmp/concourse-policy.hcl > /dev/null 2>&1
-    success
-}
 
 pipeline_build_out() {
     for (( i=0; i<${#jobs[@]}; i++ ))
@@ -189,46 +118,6 @@ build_pipeline() {
     echo -e "resources:\n$(cat /tmp/pipeline.yml)" > /tmp/pipeline.yml
     echo -e "---\n$(cat /tmp/pipeline.yml)" > /tmp/pipeline.yml
     [ -f /tmp/pipeline.yml ]
-    success
-}
-
-vault_create_token() {
-    printf "${cyan}Create vault service account.... "
-    local __resultvar=$1
-    local result=`vault token create -address=http://localhost:8200 -display-name=concourse -format=json --policy concourse | jq -r .auth.client_token`
-    success
-    eval $__resultvar="'$result'"
-}
-
-vault_login() {
-    local root_token=$1
-    printf "${cyan}Logging into Vault.... "
-    local i=0
-    local o=0
-    while [[ $i -lt 1 ]]
-    do
-        local ha_mode=`vault status -address=http://localhost:8200 | grep "HA Mode" | awk '{print $3}'`
-        if [ $ha_mode == "active" ]
-        then
-            i=$((i+1))
-        else
-            if [ $o -eq 4 ]
-            then
-                success
-            else
-                o=$((o+1))
-                sleep 2
-            fi
-        fi
-    done
-    vault login -address=http://localhost:8200 $root_token > /dev/null
-    success
-}
-
-create_vault_secret() {
-    local team=$1 pipeline=$2 secret=$3
-    printf "${cyan}Creating ${2} vault secret.... "
-    echo -n "$secret" | vault kv put -address=http://localhost:8200 $team$pipeline value=- > /dev/null
     success
 }
 
@@ -389,14 +278,14 @@ software_pre_reqs() {
                     printf "${red}This machine will reboot after pre-req's are installed\n"
                     printf "${red}Please restart the bootstrap script once complete\n\n"
                 fi
-                bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) "${failed_software[*]}"
+                bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bin/prereq.sh) "${failed_software[*]}"
                 failed_software=()
                 software_pre_reqs
                 ;;
             "n"|"no")
                 printf "${green}This command will run an Ansible Playbook to install\n"
                 printf "all pre-requisite software (inc. Ansible)\n\n${reset}"
-                printf "bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/prereq.sh) ${failed_software[*]}\n\n"
+                printf "bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bin/prereq.sh) ${failed_software[*]}\n\n"
                 exit 0
                 ;;
         esac
