@@ -5,7 +5,7 @@ failed_software=()
 #############################################
 # Load in the config file
 #############################################
-source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/config)
+source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bin/config)
 
 #############################################
 # Load in the software check functions
