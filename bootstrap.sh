@@ -21,6 +21,11 @@ source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_co
 #############################################
 source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bin/concourse)
 
+#############################################
+# Load in the input related functions
+#############################################
+source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bin/input)
+
 pull_repo() {
     local repo_url=$1 repo_name=`echo $1 | awk -F'/' '{print $NF}' | awk -F'.' '{print $1}'`
     printf "${cyan}Cloning ${repo_name} repo.... "
@@ -62,81 +67,6 @@ build_docker_network() {
     docker network create comms > /dev/null 2>&1
     success
 }
-
-capture_num_servers() {
-    local __resultvar=$1
-    until [ $((result%2)) -ne 0 ]
-    do
-        printf "${magenta}How many servers will you use (odd numbers only): ${reset}"
-        read result
-    done
-    eval $__resultvar="'$result'"
-}
-
-input_server_ips() {
-    printf "${magenta}Enter server IP addresses\n"
-    local i=0
-    while [[ $i -lt $2 ]]
-    do
-        printf "${magenta}Server[${i}]: ${reset}"
-        read ip$i
-        eval p="\$ip${i}"
-        validate_ip $p && server_list[$i]=$p && i=$((i+1)) && continue
-    done
-}
-
-validate_ip() {
-    local server=$1
-    [[ " ${server_list[@]} " =~ " ${server} " ]] && echo "${red}Please enter unique IP's${reset}" && return 1
-    valid_ip $server
-    [ $? -ne 0 ] && echo "${red}Please enter valid IP's${reset}" && return 1
-    return 0
-}
-
-capture_username() {
-    local result=""
-    printf "${magenta}Enter username (root): ${reset}"
-    local __resultvar=$1
-    read result
-    if [ "$result" == "" ]; then result="root"; fi
-    eval $__resultvar="'$result'"
-}
-
-capture_password() {
-    local result=""
-    printf "${magenta}Enter password (Password#1): ${reset}"
-    local __resultvar=$1
-    read -s result
-    if [ "$result" == "" ]; then result="Password#1"; fi
-    echo ""
-    eval $__resultvar="'$result'"
-}
-
-function valid_ip() {
-    local  ip=$1
-    local  stat=1
-    if [[ $ip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-        OIFS=$IFS
-        IFS='.'
-        ip=($ip)
-        IFS=$OIFS
-        [[ ${ip[0]} -le 255 && ${ip[1]} -le 255 \
-            && ${ip[2]} -le 255 && ${ip[3]} -le 255 ]]
-        stat=$?
-    fi
-    return $stat
-}
-
-capture_ntp_server() {
-    local result=""
-    printf "${magenta}Enter NTP Server (0.us.pool.ntp.org): ${reset}"
-    local __resultvar=$1
-    read result
-    if [ "$result" == "" ]; then result="0.us.pool.ntp.org"; fi
-    eval $__resultvar="'$result'"
-}
-
-function join_by { local IFS="$1"; shift; echo "$*"; }
 
 print_title() {
     printf "${blue}---==Project Colfax ${app_version}==---\n"
