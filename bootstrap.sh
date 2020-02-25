@@ -1,6 +1,7 @@
 #!/bin/bash
 
 failed_software=()
+
 #############################################
 # Load in the config file
 #############################################
@@ -72,45 +73,6 @@ print_title() {
     printf "${blue}---==Project Colfax ${app_version}==---\n"
     printf "This project is aimed to deploy a Dell Tech Automation Platform\n"
     printf "Please report issues to https://github.com/EMC-Underground/project_colfax${reset}\n\n"
-}
-
-software_pre_reqs() {
-    versions=0
-    local install
-    git_checks
-    docker_checks
-    docker_compose_checks
-    fly_checks
-    vault_checks
-    jq_checks
-    kernel_checks
-    if [ $versions -eq 1 ]
-    then
-        printf "${red}\n################### Pre-Reqs not met! ##################${reset}\n\n"
-        printf "Install/Update pre-reqs? [y/n]: "
-        read install
-        IFS=","
-        case $install in
-            "y"|"yes")
-                if [[ " ${failed_software[@]} " =~ " kernel " ]]
-                then
-                    printf "${red}\nKernel update required.\n"
-                    printf "${red}This machine will reboot after pre-req's are installed\n"
-                    printf "${red}Please restart the bootstrap script once complete\n\n"
-                fi
-                bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bin/prereq.sh) "${failed_software[*]}"
-                failed_software=()
-                software_pre_reqs
-                ;;
-            "n"|"no")
-                printf "${green}This command will run an Ansible Playbook to install\n"
-                printf "all pre-requisite software (inc. Ansible)\n\n${reset}"
-                printf "bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bin/prereq.sh) ${failed_software[*]}\n\n"
-                exit 0
-                ;;
-        esac
-    fi
-    printf "\n${green}All Pre-Reqs met!${reset}\n\n"
 }
 
 capture_data() {
