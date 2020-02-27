@@ -1,7 +1,5 @@
 #!/bin/bash
 
-failed_software=()
-
 #############################################
 # Load in the config file
 #############################################
@@ -223,14 +221,11 @@ Options:
     [ --config ]            Path to your config file
     [ --custom-dns-suffix ] Add a custom dns suffix for the reverse proxy to use. (Default: [server_ip].xip.io)
     [ --generate-config ]   Create config file example
+    [ --no-cleanup ]        Leave all artifacts behind (mostly in tmp)
     [ destroy | --destroy ] Destroy and cleanup the local bootstrap leaves platform
     [ --version | -v ]      Print app current version
 EOM
 )
-server_list=()
-ssh_repos=1
-#Setting default key location
-ssh_key=~/.ssh/id_rsa
 while [[ $# -gt 0 ]]
 do
     key="$1"
@@ -295,6 +290,11 @@ do
             shift
             shift
             ;;
+        "--no-cleanup")
+            no_cleanup=true
+            shift
+            shift
+            ;;
         "--version"|"-v")
             printf "${app_version}\n"
             exit 0
@@ -309,5 +309,5 @@ do
 done
 
 main
-cleanup
+if [ "$no_cleanup" = false ]; then cleanup; fi
 print_finale
