@@ -5,27 +5,27 @@ failed_software=()
 #############################################
 # Load in the config file
 #############################################
-source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bin/config)
+source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/master/bin/config)
 
 #############################################
 # Load in the software check functions
 #############################################
-source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bin/software_checks)
+source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/master/bin/software_checks)
 
 #############################################
 # Load in the vault related functions
 #############################################
-source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bin/vault)
+source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/master/bin/vault)
 
 #############################################
 # Load in the concourse related functions
 #############################################
-source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bin/concourse)
+source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/master/bin/concourse)
 
 #############################################
 # Load in the input related functions
 #############################################
-source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bin/input)
+source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/master/bin/input)
 
 pull_repo() {
     local repo_url=$1 repo_name=`echo $1 | awk -F'/' '{print $NF}' | awk -F'.' '{print $1}'`
@@ -172,7 +172,7 @@ generate_config() {
     then
         echo "[" > $HOME/.colfax/config.json
         echo "`generate_json_pipeline_job "swarm" "github.com" "EMC-Underground" "ansible_install_dockerswarm" "dev"`," >> $HOME/.colfax/config.json
-        echo "`generate_json_pipeline_job "network" "github.com" "EMC-Underground" "project_colfax" "dev"`," >> $HOME/.colfax/config.json
+        echo "`generate_json_pipeline_job "network" "github.com" "EMC-Underground" "project_colfax" "master"`," >> $HOME/.colfax/config.json
         echo "`generate_json_pipeline_job "proxy" "github.com" "EMC-Underground" "service_proxy" "master"`," >> $HOME/.colfax/config.json
         echo "`generate_json_pipeline_job "consul" "github.com" "EMC-Underground" "service_consul" "master"`," >> $HOME/.colfax/config.json
         echo "`generate_json_pipeline_job "vault" "github.com" "EMC-Underground" "service_vault" "master"`," >> $HOME/.colfax/config.json
