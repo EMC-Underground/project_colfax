@@ -97,8 +97,8 @@ vault_setup() {
     create_vault_secret "concourse/main/build/" "user_name" $user_name
     create_vault_secret "concourse/main/build/" "ntp_server" $ntp_server
     create_vault_secret "concourse/main/build/" "server_list" $(join_by "," ${server_list[@]})
-    create_vault_secret "concourse/main/build/" "dnssuffix" ${dns_suffix}
-    create_vault_secret "concourse/main/build/" "dockerhost" ${server_list[0]}
+    create_vault_secret "concourse/main/" "dnssuffix" ${dns_suffix}
+    create_vault_secret "concourse/main/" "dockerhost" ${server_list[0]}
     create_vault_secret "concourse/main/build/" "tempvaultroottoken" ${roottoken}
     create_vault_secret "concourse/main/build/" "tempvaultip" ${ip}
     [[ $ssh_repos -eq 0 ]] && ssh_key_value="$(<$ssh_key)" && create_vault_secret "concourse/main/build/" "ssh_key" "$ssh_key_value"
@@ -168,14 +168,16 @@ generate_config() {
     [ ! -d $HOME/.colfax ] && mkdir $HOME/.colfax
     if [ ! -f $HOME/.colfax/config.json ]
     then
-        echo "[" > $HOME/.colfax/config.json
+        echo "{" > $HOME/.colfax/config.json
+        echo "    \"jobs\": [" >> $HOME/.colfax/config.json
         echo "`generate_json_pipeline_job "swarm" "github.com" "EMC-Underground" "ansible_install_dockerswarm" "dev"`," >> $HOME/.colfax/config.json
         echo "`generate_json_pipeline_job "network" "github.com" "EMC-Underground" "project_colfax" "dev"`," >> $HOME/.colfax/config.json
         echo "`generate_json_pipeline_job "proxy" "github.com" "EMC-Underground" "service_proxy" "master"`," >> $HOME/.colfax/config.json
         echo "`generate_json_pipeline_job "consul" "github.com" "EMC-Underground" "service_consul" "master"`," >> $HOME/.colfax/config.json
         echo "`generate_json_pipeline_job "vault" "github.com" "EMC-Underground" "service_vault" "master"`," >> $HOME/.colfax/config.json
         echo "`generate_json_pipeline_job "concourse" "github.com" "EMC-Underground" "service_concourse" "master"`" >> $HOME/.colfax/config.json
-        echo "]" >> $HOME/.colfax/config.json
+        echo "    ]" >> $HOME/.colfax/config.json
+        echo "}" >> $HOME/.colfax/config.json
     fi
     jq type $HOME/.colfax/config.json > /dev/null 2>&1
     success
@@ -183,29 +185,36 @@ generate_config() {
 
 generate_json_pipeline_job() {
     local name=$1 src_url=$2 repo_user=$3 repo_name=$4 repo_branch=$5
-    printf "    {
-        \"job_name\": \"${name}\",
-        \"src_url\": \"${src_url}\",
-        \"repo_user\": \"${repo_user}\",
-        \"repo_name\": \"${repo_name}\",
-        \"repo_branch\": \"${repo_branch}\"
-    }"
+    printf "        {
+            \"job_name\": \"${name}\",
+            \"src_url\": \"${src_url}\",
+            \"repo_user\": \"${repo_user}\",
+            \"repo_name\": \"${repo_name}\",
+            \"repo_branch\": \"${repo_branch}\"
+        }"
 }
 
 read_config() {
     local config_file=$HOME/.colfax/config.json config="" job_length=0
     [ $1 ] && config_file=$1
     config="$(<$config_file)"
-    job_length=`echo "$config" | jq '. | length'`
+    job_length=`echo "$config" | jq '.jobs | length'`
     for (( i=0; i<${job_length}; i++ ))
     do
-        local job_name=`echo "$config" | jq -r .[$i].job_name`
-        local src_url=`echo "$config" | jq -r .[$i].src_url`
-        local repo_user=`echo "$config" | jq -r .[$i].repo_user`
-        local repo_name=`echo "$config" | jq -r .[$i].repo_name`
-        local repo_branch=`echo "$config" | jq -r .[$i].repo_branch`
+        local job_name=`echo "$config" | jq -r .jobs.[$i].job_name`
+        local src_url=`echo "$config" | jq -r .jobs.[$i].src_url`
+        local repo_user=`echo "$config" | jq -r .jobs.[$i].repo_user`
+        local repo_name=`echo "$config" | jq -r .jobs.[$i].repo_name`
+        local repo_branch=`echo "$config" | jq -r .jobs.[$i].repo_branch`
         add_job $job_name `generate_repo_url $src_url $repo_user $repo_name` $repo_branch
     done
+    if [[ `echo $config | jq .persistance` != "null" ]]
+    then
+      volume_driver=`echo "$config" | jq -r .persistance.driver`
+      volume_driver_opts=`echo "$config" | jq -r .persistance.driver_opts`
+      create_vault_secret "concourse/main/build/" "volume_driver" $volume_driver
+      create_vault_secret "concourse/main/build/" "volume_driver_opts" $volume_driver_opts
+    fi
 }
 
 usage=$(cat << EOM
