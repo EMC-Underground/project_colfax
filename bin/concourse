@@ -77,6 +77,33 @@ build_pipeline() {
     success
 }
 
+read_config() {
+    local config_file=$HOME/.colfax/config.json config="" job_length=0
+    [ $1 ] && config_file=$1
+    config="$(<$config_file)"
+    local jobs_list=`echo "$config" | jq .jobs`
+    local job_length=`echo "$config" | jq '.jobs | length'`
+    for (( i=0; i<${job_length}; i++ ))
+    do
+        local job_name=`echo "$jobs_list" | jq -r .[$i].job_name`
+        local src_url=`echo "$jobs_list" | jq -r .[$i].src_url`
+        local repo_user=`echo "$jobs_list" | jq -r .[$i].repo_user`
+        local repo_name=`echo "$jobs_list" | jq -r .[$i].repo_name`
+        local repo_branch=`echo "$jobs_list" | jq -r .[$i].repo_branch`
+        add_job $job_name `generate_repo_url $src_url $repo_user $repo_name` $repo_branch
+    done
+}
+
+create_persistance_secrets() {
+    if [[ `echo $config | jq .persistance` != "null" ]]
+    then
+        local volume_driver=`echo "$config" | jq -r .persistance.driver`
+        local volume_driver_opts=`echo "$config" | jq -r .persistance.driver_opts`
+        create_vault_secret "concourse/main/build/" "volume_driver" "${volume_driver}"
+        create_vault_secret "concourse/main/build/" "volume_driver_opts" "${volume_driver_opts}"
+    fi
+}
+
 concourse_login() {
     printf "${cyan}Logging in to concourse.... "
     sleep 4

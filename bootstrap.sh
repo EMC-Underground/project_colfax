@@ -109,6 +109,7 @@ concourse_setup() {
     generate_keys
     deploy_concourse
     build_pipeline
+    create_persistance_secrets
     concourse_login
     set_swarm_pipeline
 }
@@ -192,29 +193,6 @@ generate_json_pipeline_job() {
             \"repo_name\": \"${repo_name}\",
             \"repo_branch\": \"${repo_branch}\"
         }"
-}
-
-read_config() {
-    local config_file=$HOME/.colfax/config.json config="" job_length=0
-    [ $1 ] && config_file=$1
-    config="$(<$config_file)"
-    job_length=`echo "$config" | jq '.jobs | length'`
-    for (( i=0; i<${job_length}; i++ ))
-    do
-        local job_name=`echo "$config" | jq -r .jobs.[$i].job_name`
-        local src_url=`echo "$config" | jq -r .jobs.[$i].src_url`
-        local repo_user=`echo "$config" | jq -r .jobs.[$i].repo_user`
-        local repo_name=`echo "$config" | jq -r .jobs.[$i].repo_name`
-        local repo_branch=`echo "$config" | jq -r .jobs.[$i].repo_branch`
-        add_job $job_name `generate_repo_url $src_url $repo_user $repo_name` $repo_branch
-    done
-    if [[ `echo $config | jq .persistance` != "null" ]]
-    then
-      volume_driver=`echo "$config" | jq -r .persistance.driver`
-      volume_driver_opts=`echo "$config" | jq -r .persistance.driver_opts`
-      create_vault_secret "concourse/main/build/" "volume_driver" $volume_driver
-      create_vault_secret "concourse/main/build/" "volume_driver_opts" $volume_driver_opts
-    fi
 }
 
 usage=$(cat << EOM
