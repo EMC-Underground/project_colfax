@@ -173,10 +173,10 @@ generate_config() {
         echo "    \"jobs\": [" >> $HOME/.colfax/config.json
         echo "`generate_json_pipeline_job "swarm" "github.com" "EMC-Underground" "ansible_install_dockerswarm" "dev"`," >> $HOME/.colfax/config.json
         echo "`generate_json_pipeline_job "network" "github.com" "EMC-Underground" "project_colfax" "dev"`," >> $HOME/.colfax/config.json
-        echo "`generate_json_pipeline_job "proxy" "github.com" "EMC-Underground" "service_proxy" "master"`," >> $HOME/.colfax/config.json
-        echo "`generate_json_pipeline_job "consul" "github.com" "EMC-Underground" "service_consul" "master"`," >> $HOME/.colfax/config.json
-        echo "`generate_json_pipeline_job "vault" "github.com" "EMC-Underground" "service_vault" "master"`," >> $HOME/.colfax/config.json
-        echo "`generate_json_pipeline_job "concourse" "github.com" "EMC-Underground" "service_concourse" "master"`" >> $HOME/.colfax/config.json
+        echo "`generate_json_pipeline_job "proxy" "github.com" "EMC-Underground" "service_proxy" "dev"`," >> $HOME/.colfax/config.json
+        echo "`generate_json_pipeline_job "consul" "github.com" "EMC-Underground" "service_consul" "dev"`," >> $HOME/.colfax/config.json
+        echo "`generate_json_pipeline_job "vault" "github.com" "EMC-Underground" "service_vault" "dev"`," >> $HOME/.colfax/config.json
+        echo "`generate_json_pipeline_job "concourse" "github.com" "EMC-Underground" "service_concourse" "dev"`" >> $HOME/.colfax/config.json
         echo "    ]" >> $HOME/.colfax/config.json
         echo "}" >> $HOME/.colfax/config.json
     fi
