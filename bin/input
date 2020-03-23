@@ -72,3 +72,10 @@ capture_ntp_server() {
 }
 
 function join_by { local IFS="$1"; shift; echo "$*"; }
+
+capture_pipeline_review() {
+    local result=""
+    printf "${magenta}Review Pipeline Jobs (y/N)? ${reset}"
+    read result
+
+}

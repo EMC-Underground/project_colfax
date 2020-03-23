@@ -6,6 +6,11 @@
 source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bin/config)
 
 #############################################
+# Load in the generate file
+#############################################
+source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bin/generate)
+
+#############################################
 # Load in the software check functions
 #############################################
 source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bin/software_checks)
@@ -162,37 +167,6 @@ check_ssh_key() {
     printf "${cyan}Checking for SSH key.... "
     [ -f $ssh_key ]
     success
-}
-
-generate_config() {
-    printf "${cyan}Checking for config file.... "
-    [ ! -d $HOME/.colfax ] && mkdir $HOME/.colfax
-    if [ ! -f $HOME/.colfax/config.json ]
-    then
-        echo "{" > $HOME/.colfax/config.json
-        echo "    \"jobs\": [" >> $HOME/.colfax/config.json
-        echo "`generate_json_pipeline_job "swarm" "github.com" "EMC-Underground" "ansible_install_dockerswarm" "dev"`," >> $HOME/.colfax/config.json
-        echo "`generate_json_pipeline_job "network" "github.com" "EMC-Underground" "project_colfax" "dev"`," >> $HOME/.colfax/config.json
-        echo "`generate_json_pipeline_job "proxy" "github.com" "EMC-Underground" "service_proxy" "master"`," >> $HOME/.colfax/config.json
-        echo "`generate_json_pipeline_job "consul" "github.com" "EMC-Underground" "service_consul" "master"`," >> $HOME/.colfax/config.json
-        echo "`generate_json_pipeline_job "vault" "github.com" "EMC-Underground" "service_vault" "master"`," >> $HOME/.colfax/config.json
-        echo "`generate_json_pipeline_job "concourse" "github.com" "EMC-Underground" "service_concourse" "master"`" >> $HOME/.colfax/config.json
-        echo "    ]" >> $HOME/.colfax/config.json
-        echo "}" >> $HOME/.colfax/config.json
-    fi
-    jq type $HOME/.colfax/config.json > /dev/null 2>&1
-    success
-}
-
-generate_json_pipeline_job() {
-    local name=$1 src_url=$2 repo_user=$3 repo_name=$4 repo_branch=$5
-    printf "        {
-            \"job_name\": \"${name}\",
-            \"src_url\": \"${src_url}\",
-            \"repo_user\": \"${repo_user}\",
-            \"repo_name\": \"${repo_name}\",
-            \"repo_branch\": \"${repo_branch}\"
-        }"
 }
 
 usage=$(cat << EOM

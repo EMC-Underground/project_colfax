@@ -101,6 +101,8 @@ create_persistance_secrets() {
         local volume_driver_opts=`echo "$config" | jq -r .persistance.driver_opts`
         create_vault_secret "concourse/main/build/" "volume_driver" "${volume_driver}"
         create_vault_secret "concourse/main/build/" "volume_driver_opts" "${volume_driver_opts}"
+    else
+        create_vault_secret "concourse/main/build/" "volume_driver" ""
     fi
 }
 
