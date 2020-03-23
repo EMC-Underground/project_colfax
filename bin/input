@@ -1,5 +1,6 @@
 capture_num_servers() {
     local __resultvar=$1
+    local result=""
     until [ $((result%2)) -ne 0 ]
     do
         printf "${magenta}How many servers will you use (odd numbers only): ${reset}"
@@ -78,4 +79,24 @@ capture_pipeline_review() {
     printf "${magenta}Review Pipeline Jobs (y/N)? ${reset}"
     read result
 
+}
+
+capture_persistence() {
+    local result=""
+    printf "${magenta}Does your environment offer persistence (y/N)? ${reset}"
+    local __resultvar=$1
+    read result
+    if [ "$result" == "" ]; then result="N"; fi
+    eval $__resultvar="'$result'"
+}
+
+capture_persistence_driver() {
+    local result=""
+    local __resultvar=$1
+    until [ "$result" = "nfs" ] || [ "$result" = "vxflex" ]
+    do
+        printf "${magenta}Which persistence driver should we use (nfs/vxflex)? ${reset}"
+        read result
+    done
+    eval $__resultvar="'$result'"
 }

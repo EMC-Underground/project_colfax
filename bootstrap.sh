@@ -84,6 +84,8 @@ capture_data() {
     [ -z ${user_name+x} ] && capture_username user_name
     [ -z ${password+x} ] && capture_password password
     [ -z ${ntp_server+x} ] && capture_ntp_server ntp_server
+    [ -z ${persistence_driver+x} ] && capture_persistence persistence
+    [ "$persistence" ] && capture_persistence_driver persistence_driver
 }
 
 vault_setup() {
