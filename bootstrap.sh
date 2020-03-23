@@ -85,7 +85,8 @@ capture_data() {
     [ -z ${password+x} ] && capture_password password
     [ -z ${ntp_server+x} ] && capture_ntp_server ntp_server
     [ -z ${persistence_driver+x} ] && capture_persistence persistence
-    [ "$persistence" ] && capture_persistence_driver persistence_driver
+    [ "$persistence" = "y" ] && [ -z ${persistence_driver+x} ] && capture_persistence_driver persistence_driver
+    [ "$persistence_driver" ] && [ -z ${persistence_options+x} ] && capture_persistence_options persistence_options
 }
 
 vault_setup() {
@@ -144,6 +145,7 @@ print_finale() {
 main() {
     print_title
     ip=`ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p'`
+    persistence="n"
     export DNS_URL=$ip
     software_pre_reqs
     capture_data

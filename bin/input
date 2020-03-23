@@ -100,3 +100,6 @@ capture_persistence_driver() {
     done
     eval $__resultvar="'$result'"
 }
+
+capture_persistence_options() {
+}
