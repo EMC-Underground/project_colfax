@@ -90,7 +90,7 @@ capture_data() {
 }
 
 capture_generic_data() {
-    local vars=( "user_name" "admin" "ntp_server" "0.us.pool.ntp.org" "persistance" "no" )
+    local vars=( "user_name" "admin" "ntp_server" "0.us.pool.ntp.org" "persistance" "n" )
     local i=0
     while [[ $i -lt ${#vars[@]} ]]
     do
