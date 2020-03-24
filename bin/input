@@ -101,5 +101,24 @@ capture_persistence_driver() {
     eval $__resultvar="'$result'"
 }
 
-capture_persistence_options() {
+capture_nfs_server() {
+    local result=""
+    local __resultvar=$1
+    while [ "$result" = "" ]
+    do
+        printf "${magenta}NFS Server: ${reset}"
+        read result
+    done
+    eval $__resultvar="'$result'"
+}
+
+capture_nfs_share() {
+    local result=""
+    local __resultvar=$1
+    while [ "$result" = "" ]
+    do
+        printf "${magenta}NFS Share: ${reset}"
+        read result
+    done
+    eval $__resultvar="'$result'"
 }

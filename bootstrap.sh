@@ -86,7 +86,8 @@ capture_data() {
     [ -z ${ntp_server+x} ] && capture_ntp_server ntp_server
     [ -z ${persistence_driver+x} ] && capture_persistence persistence
     [ "$persistence" = "y" ] && [ -z ${persistence_driver+x} ] && capture_persistence_driver persistence_driver
-    [ "$persistence_driver" ] && [ -z ${persistence_options+x} ] && capture_persistence_options persistence_options
+    [ "$persistence_driver" = "nfs" ] && [ -z ${nfs_server+x} ] && capture_nfs_server nfs_server
+    [ "$persistence_driver" = "nfs" ] && [ -z ${nfs_share+x} ] && capture_nfs_share nfs_share
 }
 
 vault_setup() {
