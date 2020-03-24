@@ -6,6 +6,32 @@ build_deploy_vault() {
     cd - > /dev/null 2>&1
 }
 
+vault_vxflex_secrets() {
+    local vars=( "gateway_ip" "gateway_port" "system_name" "protection_domain" "storage_pool" "username" "password" )
+    local i=0
+    while [[ $i -lt ${#vars[@]} ]]
+    do
+        local secret_key="vxflex_${vars[$i]}"
+        i=$((i+1))
+        eval secret_value=\$$secret_key
+        create_vault_secret "concourse/main/" $secret_key $secret_value
+        i=$((i+1))
+    done
+}
+
+vault_nfs_secrets() {
+    local vars=( "nfs_server" "nfs_share" )
+    local i=0
+    while [[ $i -lt ${#vars[@]} ]]
+    do
+        local secret_key="${vars[$i]}"
+        i=$((i+1))
+        eval secret_value=\$$secret_key
+        create_vault_secret "concourse/main/" $secret_key $secret_value
+        i=$((i+1))
+    done
+}
+
 vault_init() {
     printf "${cyan}Initializing Vault.... "
     local  __resultvar=$1

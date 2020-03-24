@@ -81,13 +81,41 @@ print_title() {
 capture_data() {
     [ ${#server_list[@]} -eq 0 ] && capture_num_servers num_servers
     [ ${#server_list[@]} -eq 0 ] && input_server_ips server_list $num_servers
-    [ -z ${user_name+x} ] && capture_username user_name
     [ -z ${password+x} ] && capture_password password
-    [ -z ${ntp_server+x} ] && capture_ntp_server ntp_server
-    [ -z ${persistence_driver+x} ] && capture_persistence persistence
+    capture_generic_data
     [ "$persistence" = "y" ] && [ -z ${persistence_driver+x} ] && capture_persistence_driver persistence_driver
     [ "$persistence_driver" = "nfs" ] && [ -z ${nfs_server+x} ] && capture_nfs_server nfs_server
     [ "$persistence_driver" = "nfs" ] && [ -z ${nfs_share+x} ] && capture_nfs_share nfs_share
+    [ "$persistence_driver" = "vxflex" ] && capture_vxflex_data
+}
+
+capture_generic_data() {
+    local vars=( "user_name" "admin" "ntp_server" "0.us.pool.ntp.org" "persistance" "no" )
+    local i=0
+    while [[ $i -lt ${#vars[@]} ]]
+    do
+        local var_name="${vars[$i]}"
+        i=$((i+1))
+        local var_default=${vars[$i]}
+        eval var_value=\$$var_name
+        [ "${var_value}" = "" ] && capture_the_data $var_name $var_default
+        i=$((i+1))
+    done
+}
+
+capture_vxflex_data() {
+    local vars=( "gateway_ip" "" "gateway_port" 443 "system_name" "scaleio" "protection_domain" "pd1" "storage_pool" "sp1" "username" "admin" "password" "Password#1" )
+    echo "---==Capture VxFlex Info==---"
+    local i=0
+    while [[ $i -lt ${#vars[@]} ]]
+    do
+        local var_name="vxflex_${vars[$i]}"
+        i=$((i+1))
+        local var_default=${vars[$i]}
+        eval var_value=\$$var_name
+        [ "${var_value}" = "" ] && capture_the_data $var_name $var_default
+        i=$((i+1))
+    done
 }
 
 vault_setup() {
@@ -102,6 +130,9 @@ vault_setup() {
     vault_create_policy
     vault_create_token token
     export VAULT_CLIENT_TOKEN=$token
+    [ $persistence_driver = "vxflex" ] && vault_vxflex_secrets
+    [ $persistence_driver = "nfs" ] && vault_nfs_secrets
+    create_vault_secret "concourse/main/build/" "persistence_driver" $persistence_driver
     create_vault_secret "concourse/main/build/" "password" $password
     create_vault_secret "concourse/main/build/" "user_name" $user_name
     create_vault_secret "concourse/main/build/" "ntp_server" $ntp_server

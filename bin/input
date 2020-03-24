@@ -29,15 +29,6 @@ validate_ip() {
     return 0
 }
 
-capture_username() {
-    local result=""
-    printf "${magenta}Enter username (root): ${reset}"
-    local __resultvar=$1
-    read result
-    if [ "$result" == "" ]; then result="root"; fi
-    eval $__resultvar="'$result'"
-}
-
 capture_password() {
     local result=""
     printf "${magenta}Enter password (Password#1): ${reset}"
@@ -63,15 +54,6 @@ function valid_ip() {
     return $stat
 }
 
-capture_ntp_server() {
-    local result=""
-    printf "${magenta}Enter NTP Server (0.us.pool.ntp.org): ${reset}"
-    local __resultvar=$1
-    read result
-    if [ "$result" == "" ]; then result="0.us.pool.ntp.org"; fi
-    eval $__resultvar="'$result'"
-}
-
 function join_by { local IFS="$1"; shift; echo "$*"; }
 
 capture_pipeline_review() {
@@ -79,15 +61,6 @@ capture_pipeline_review() {
     printf "${magenta}Review Pipeline Jobs (y/N)? ${reset}"
     read result
 
-}
-
-capture_persistence() {
-    local result=""
-    printf "${magenta}Does your environment offer persistence (y/N)? ${reset}"
-    local __resultvar=$1
-    read result
-    if [ "$result" == "" ]; then result="N"; fi
-    eval $__resultvar="'$result'"
 }
 
 capture_persistence_driver() {
@@ -120,5 +93,14 @@ capture_nfs_share() {
         printf "${magenta}NFS Share: ${reset}"
         read result
     done
+    eval $__resultvar="'$result'"
+}
+
+capture_the_data() {
+    local result="" __resultvar=$1 vardefault=$2
+    local __resultvar=$1
+    printf "${magenta}${__resultvar//_/ } (${vardefault}): ${reset}"
+    read result
+    if [ "$result" = "" ]; then result="${vardefault}"; fi
     eval $__resultvar="'$result'"
 }
