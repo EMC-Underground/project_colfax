@@ -83,10 +83,10 @@ capture_data() {
     [ ${#server_list[@]} -eq 0 ] && input_server_ips server_list $num_servers
     [ -z ${password+x} ] && capture_password password
     capture_generic_data
-    [ "$persistence" = "y" ] && [ -z ${persistence_driver+x} ] && capture_persistence_driver persistence_driver
-    [ "$persistence_driver" = "nfs" ] && [ -z ${nfs_server+x} ] && capture_nfs_server nfs_server
-    [ "$persistence_driver" = "nfs" ] && [ -z ${nfs_share+x} ] && capture_nfs_share nfs_share
-    [ "$persistence_driver" = "vxflex" ] && capture_vxflex_data
+    [[ "$persistence" == "y" ]] && [ -z ${persistence_driver+x} ] && capture_persistence_driver persistence_driver
+    [[ "$persistence_driver" == "nfs" ]] && [ -z ${nfs_server+x} ] && capture_nfs_server nfs_server
+    [[ "$persistence_driver" == "nfs" ]] && [ -z ${nfs_share+x} ] && capture_nfs_share nfs_share
+    [[ "$persistence_driver" == "vxflex" ]] && capture_vxflex_data
 }
 
 capture_generic_data() {
@@ -98,7 +98,7 @@ capture_generic_data() {
         i=$((i+1))
         local var_default=${vars[$i]}
         eval var_value=\$$var_name
-        [ "${var_value}" = "" ] && capture_the_data $var_name $var_default
+        [ "${var_value}" == "" ] && capture_the_data $var_name $var_default
         i=$((i+1))
     done
 }
@@ -113,7 +113,7 @@ capture_vxflex_data() {
         i=$((i+1))
         local var_default=${vars[$i]}
         eval var_value=\$$var_name
-        [ "${var_value}" = "" ] && capture_the_data $var_name $var_default
+        [ "${var_value}" == "" ] && capture_the_data $var_name $var_default
         i=$((i+1))
     done
 }
@@ -132,7 +132,7 @@ vault_setup() {
     export VAULT_CLIENT_TOKEN=$token
     vault_vxflex_secrets
     vault_nfs_secrets
-    create_vault_secret "concourse/main/build/" "persistence_driver" $persistence_driver
+    create_vault_secret "concourse/main/build/" "persistence_driver" "$persistence_driver"
     create_vault_secret "concourse/main/build/" "swarm_tags" "swarm,${persistence_driver}"
     create_vault_secret "concourse/main/build/" "password" $password
     create_vault_secret "concourse/main/build/" "user_name" $user_name

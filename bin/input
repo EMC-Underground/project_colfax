@@ -34,7 +34,7 @@ capture_password() {
     printf "${magenta}Enter password (Password#1): ${reset}"
     local __resultvar=$1
     read -s result
-    if [ "$result" == "" ]; then result="Password#1"; fi
+    if [[ "$result" == "" ]]; then result="Password#1"; fi
     echo ""
     eval $__resultvar="'$result'"
 }
@@ -66,7 +66,7 @@ capture_pipeline_review() {
 capture_persistence_driver() {
     local result=""
     local __resultvar=$1
-    until [ "$result" = "nfs" ] || [ "$result" = "vxflex" ]
+    until [[ "$result" == "nfs" ]] || [[ "$result" == "vxflex" ]]
     do
         printf "${magenta}Which persistence driver should we use (nfs/vxflex)? ${reset}"
         read result
@@ -77,7 +77,7 @@ capture_persistence_driver() {
 capture_nfs_server() {
     local result=""
     local __resultvar=$1
-    while [ "$result" = "" ]
+    while [[ "$result" == "" ]]
     do
         printf "${magenta}NFS Server: ${reset}"
         read result
@@ -88,7 +88,7 @@ capture_nfs_server() {
 capture_nfs_share() {
     local result=""
     local __resultvar=$1
-    while [ "$result" = "" ]
+    while [[ "$result" == "" ]]
     do
         printf "${magenta}NFS Share: ${reset}"
         read result
@@ -101,6 +101,6 @@ capture_the_data() {
     local __resultvar=$1
     printf "${magenta}${__resultvar//_/ } (${vardefault}): ${reset}"
     read result
-    if [ "$result" = "" ]; then result="${vardefault}"; fi
+    if [[ "$result" == "" ]]; then result="${vardefault}"; fi
     eval $__resultvar="'$result'"
 }
