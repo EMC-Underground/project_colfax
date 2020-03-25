@@ -12,7 +12,6 @@ vault_vxflex_secrets() {
     while [[ $i -lt ${#vars[@]} ]]
     do
         local secret_key="vxflex_${vars[$i]}"
-        i=$((i+1))
         eval secret_value=\$$secret_key
         create_vault_secret "concourse/main/" $secret_key $secret_value
         i=$((i+1))
@@ -25,7 +24,6 @@ vault_nfs_secrets() {
     while [[ $i -lt ${#vars[@]} ]]
     do
         local secret_key="${vars[$i]}"
-        i=$((i+1))
         eval secret_value=\$$secret_key
         create_vault_secret "concourse/main/" $secret_key $secret_value
         i=$((i+1))
