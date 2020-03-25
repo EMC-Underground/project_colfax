@@ -150,7 +150,6 @@ concourse_setup() {
     generate_keys
     deploy_concourse
     build_pipeline
-    create_persistance_secrets
     concourse_login
     set_swarm_pipeline
 }

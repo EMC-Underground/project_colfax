@@ -94,18 +94,6 @@ read_config() {
     done
 }
 
-create_persistance_secrets() {
-    if [[ `echo $config | jq .persistance` != "null" ]]
-    then
-        local volume_driver=`echo "$config" | jq -r .persistance.driver`
-        local volume_driver_opts=`echo "$config" | jq -r .persistance.driver_opts`
-        create_vault_secret "concourse/main/build/" "volume_driver" "${volume_driver}"
-        create_vault_secret "concourse/main/build/" "volume_driver_opts" "${volume_driver_opts}"
-    else
-        create_vault_secret "concourse/main/build/" "volume_driver" ""
-    fi
-}
-
 concourse_login() {
     printf "${cyan}Logging in to concourse.... "
     sleep 4
