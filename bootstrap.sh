@@ -130,9 +130,10 @@ vault_setup() {
     vault_create_policy
     vault_create_token token
     export VAULT_CLIENT_TOKEN=$token
-    [ $persistence_driver = "vxflex" ] && vault_vxflex_secrets
-    [ $persistence_driver = "nfs" ] && vault_nfs_secrets
+    vault_vxflex_secrets
+    vault_nfs_secrets
     create_vault_secret "concourse/main/build/" "persistence_driver" $persistence_driver
+    create_vault_secret "concourse/main/build/" "swarm_tags" "swarm,${persistence_driver}"
     create_vault_secret "concourse/main/build/" "password" $password
     create_vault_secret "concourse/main/build/" "user_name" $user_name
     create_vault_secret "concourse/main/build/" "ntp_server" $ntp_server
