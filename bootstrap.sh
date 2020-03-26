@@ -1,4 +1,4 @@
-#!/bin/bash -c
+#!/bin/bash
 
 #############################################
 # Load in the config file
@@ -83,9 +83,6 @@ capture_data() {
     [ ${#server_list[@]} -eq 0 ] && input_server_ips server_list $num_servers
     [ -z ${password+x} ] && capture_password password
     capture_generic_data
-    [[ "$persistence" == "y" ]] && echo "ITS SET!"
-    echo $persistence_driver
-    [ -z ${persistence_driver+x} ] && echo "Its double set"
     [[ "$persistence" == "y" ]] && [ -z ${persistence_driver+x} ] && capture_persistence_driver persistence_driver
     [[ "$persistence_driver" == "nfs" ]] && [ -z ${nfs_server+x} ] && capture_nfs_server nfs_server
     [[ "$persistence_driver" == "nfs" ]] && [ -z ${nfs_share+x} ] && capture_nfs_share nfs_share
