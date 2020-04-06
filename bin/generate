@@ -11,7 +11,7 @@ generate_config() {
         echo "`generate_json_pipeline_job "consul" "github.com" "EMC-Underground" "service_consul" "dev"`," >> $HOME/.colfax/config.json
         echo "`generate_json_pipeline_job "vault" "github.com" "EMC-Underground" "service_vault" "dev"`," >> $HOME/.colfax/config.json
         echo "`generate_json_pipeline_job "concourse" "github.com" "EMC-Underground" "service_concourse" "dev"`," >> $HOME/.colfax/config.json
-        echo "`generate_json_pipeline_job "pipelines" "github.com" "EMC-Underground" "service_pipelines" "dev"`" >> $HOME/.colfax/config.json
+        echo "`generate_json_pipeline_job "pipelines" "github.com" "EMC-Underground" "service_pipelines" "master"`" >> $HOME/.colfax/config.json
         echo "    ]" >> $HOME/.colfax/config.json
         echo "}" >> $HOME/.colfax/config.json
     fi
