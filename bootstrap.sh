@@ -138,6 +138,8 @@ vault_setup() {
     create_vault_secret "concourse/main/build/" "user_name" $user_name
     create_vault_secret "concourse/main/build/" "ntp_server" $ntp_server
     create_vault_secret "concourse/main/build/" "server_list" $(join_by "," ${server_list[@]})
+    create_vault_secret "concourse/main/build/" "concourse_username" "test"
+    create_vault_secret "concourse/main/build/" "concourse_password" "test"
     create_vault_secret "concourse/main/" "dnssuffix" ${dns_suffix}
     create_vault_secret "concourse/main/" "dockerhost" ${server_list[0]}
     create_vault_secret "concourse/main/build/" "tempvaultroottoken" ${roottoken}
