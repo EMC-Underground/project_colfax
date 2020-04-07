@@ -101,7 +101,7 @@ main() {
     install_prereqs
 }
 
-branch="master"
+branch="dev"
 install_tags=$1
 [ $2 ] && branch=$2
 main

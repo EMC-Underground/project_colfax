@@ -1,11 +1,14 @@
 #!/bin/bash
 
-failed_software=()
-
 #############################################
 # Load in the config file
 #############################################
 source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/master/bin/config)
+
+#############################################
+# Load in the generate file
+#############################################
+source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bin/generate)
 
 #############################################
 # Load in the software check functions
@@ -78,9 +81,41 @@ print_title() {
 capture_data() {
     [ ${#server_list[@]} -eq 0 ] && capture_num_servers num_servers
     [ ${#server_list[@]} -eq 0 ] && input_server_ips server_list $num_servers
-    [ -z ${user_name+x} ] && capture_username user_name
     [ -z ${password+x} ] && capture_password password
-    [ -z ${ntp_server+x} ] && capture_ntp_server ntp_server
+    capture_generic_data
+    [[ "$persistence" == "y" ]] && [ -z ${persistence_driver+x} ] && capture_persistence_driver persistence_driver
+    [[ "$persistence_driver" == "nfs" ]] && [ -z ${nfs_server+x} ] && capture_nfs_server nfs_server
+    [[ "$persistence_driver" == "nfs" ]] && [ -z ${nfs_share+x} ] && capture_nfs_share nfs_share
+    [[ "$persistence_driver" == "vxflex" ]] && capture_vxflex_data
+}
+
+capture_generic_data() {
+    local vars=( "user_name" "root" "ntp_server" "0.us.pool.ntp.org" "persistence" "n" )
+    local i=0
+    while [[ $i -lt ${#vars[@]} ]]
+    do
+        local var_name="${vars[$i]}"
+        i=$((i+1))
+        local var_default=${vars[$i]}
+        eval var_value=\$$var_name
+        [ "${var_value}" == "" ] && capture_the_data $var_name $var_default
+        i=$((i+1))
+    done
+}
+
+capture_vxflex_data() {
+    local vars=( "gateway_ip" "" "gateway_port" 443 "system_name" "scaleio" "protection_domain" "pd1" "storage_pool" "sp1" "username" "admin" "password" "Password#1" )
+    echo "---==Capture VxFlex Info==---"
+    local i=0
+    while [[ $i -lt ${#vars[@]} ]]
+    do
+        local var_name="vxflex_${vars[$i]}"
+        i=$((i+1))
+        local var_default=${vars[$i]}
+        eval var_value=\$$var_name
+        [ "${var_value}" == "" ] && capture_the_data $var_name $var_default
+        i=$((i+1))
+    done
 }
 
 vault_setup() {
@@ -95,12 +130,18 @@ vault_setup() {
     vault_create_policy
     vault_create_token token
     export VAULT_CLIENT_TOKEN=$token
+    vault_vxflex_secrets
+    vault_nfs_secrets
+    create_vault_secret "concourse/main/build/" "persistence_driver" "$persistence_driver"
+    create_vault_secret "concourse/main/build/" "swarm_tags" "swarm,${persistence_driver}"
     create_vault_secret "concourse/main/build/" "password" $password
     create_vault_secret "concourse/main/build/" "user_name" $user_name
     create_vault_secret "concourse/main/build/" "ntp_server" $ntp_server
     create_vault_secret "concourse/main/build/" "server_list" $(join_by "," ${server_list[@]})
-    create_vault_secret "concourse/main/build/" "dnssuffix" ${dns_suffix}
-    create_vault_secret "concourse/main/build/" "dockerhost" ${server_list[0]}
+    create_vault_secret "concourse/main/build/" "concourse_username" "test"
+    create_vault_secret "concourse/main/build/" "concourse_password" "test"
+    create_vault_secret "concourse/main/" "dnssuffix" ${dns_suffix}
+    create_vault_secret "concourse/main/" "dockerhost" ${server_list[0]}
     create_vault_secret "concourse/main/build/" "tempvaultroottoken" ${roottoken}
     create_vault_secret "concourse/main/build/" "tempvaultip" ${ip}
     [[ $ssh_repos -eq 0 ]] && ssh_key_value="$(<$ssh_key)" && create_vault_secret "concourse/main/build/" "ssh_key" "$ssh_key_value"
@@ -131,7 +172,7 @@ print_finale() {
     printf "${blue}###################### ${magenta}SWARM INFO ${blue}########################\n"
     printf "${blue}##              ${magenta}If running from a remote CLI\n"
     printf "${blue}##           ${green}export DOCKER_HOST=${server_list[0]}\n"
-    printf "${blue}##         ${magenta}Proxy URL: ${green}https://proxy.${dns_suffix}\n"
+    printf "${blue}##         ${magenta}Proxy URL: ${green}http://proxy.${dns_suffix}\n"
     printf "${blue}##########################################################${reset}\n"
 }
 
@@ -165,49 +206,15 @@ check_ssh_key() {
     success
 }
 
-generate_config() {
-    printf "${cyan}Checking for config file.... "
-    [ ! -d $HOME/.colfax ] && mkdir $HOME/.colfax
-    if [ ! -f $HOME/.colfax/config.json ]
-    then
-        echo "[" > $HOME/.colfax/config.json
-        echo "`generate_json_pipeline_job "swarm" "github.com" "EMC-Underground" "ansible_install_dockerswarm" "dev"`," >> $HOME/.colfax/config.json
-        echo "`generate_json_pipeline_job "network" "github.com" "EMC-Underground" "project_colfax" "master"`," >> $HOME/.colfax/config.json
-        echo "`generate_json_pipeline_job "proxy" "github.com" "EMC-Underground" "service_proxy" "master"`," >> $HOME/.colfax/config.json
-        echo "`generate_json_pipeline_job "consul" "github.com" "EMC-Underground" "service_consul" "master"`," >> $HOME/.colfax/config.json
-        echo "`generate_json_pipeline_job "vault" "github.com" "EMC-Underground" "service_vault" "master"`," >> $HOME/.colfax/config.json
-        echo "`generate_json_pipeline_job "concourse" "github.com" "EMC-Underground" "service_concourse" "master"`" >> $HOME/.colfax/config.json
-        echo "]" >> $HOME/.colfax/config.json
-    fi
-    jq type $HOME/.colfax/config.json > /dev/null 2>&1
-    success
-}
-
 generate_json_pipeline_job() {
     local name=$1 src_url=$2 repo_user=$3 repo_name=$4 repo_branch=$5
-    printf "    {
-        \"job_name\": \"${name}\",
-        \"src_url\": \"${src_url}\",
-        \"repo_user\": \"${repo_user}\",
-        \"repo_name\": \"${repo_name}\",
-        \"repo_branch\": \"${repo_branch}\"
-    }"
-}
-
-read_config() {
-    local config_file=$HOME/.colfax/config.json config="" job_length=0
-    [ $1 ] && config_file=$1
-    config="$(<$config_file)"
-    job_length=`echo "$config" | jq '. | length'`
-    for (( i=0; i<${job_length}; i++ ))
-    do
-        local job_name=`echo "$config" | jq -r .[$i].job_name`
-        local src_url=`echo "$config" | jq -r .[$i].src_url`
-        local repo_user=`echo "$config" | jq -r .[$i].repo_user`
-        local repo_name=`echo "$config" | jq -r .[$i].repo_name`
-        local repo_branch=`echo "$config" | jq -r .[$i].repo_branch`
-        add_job $job_name `generate_repo_url $src_url $repo_user $repo_name` $repo_branch
-    done
+    printf "        {
+            \"job_name\": \"${name}\",
+            \"src_url\": \"${src_url}\",
+            \"repo_user\": \"${repo_user}\",
+            \"repo_name\": \"${repo_name}\",
+            \"repo_branch\": \"${repo_branch}\"
+        }"
 }
 
 usage=$(cat << EOM
@@ -223,14 +230,11 @@ Options:
     [ --config ]            Path to your config file
     [ --custom-dns-suffix ] Add a custom dns suffix for the reverse proxy to use. (Default: [server_ip].xip.io)
     [ --generate-config ]   Create config file example
+    [ --no-cleanup ]        Leave all artifacts behind (mostly in tmp)
     [ destroy | --destroy ] Destroy and cleanup the local bootstrap leaves platform
     [ --version | -v ]      Print app current version
 EOM
 )
-server_list=()
-ssh_repos=1
-#Setting default key location
-ssh_key=~/.ssh/id_rsa
 while [[ $# -gt 0 ]]
 do
     key="$1"
@@ -295,6 +299,11 @@ do
             shift
             shift
             ;;
+        "--no-cleanup")
+            no_cleanup=true
+            shift
+            shift
+            ;;
         "--version"|"-v")
             printf "${app_version}\n"
             exit 0
@@ -309,5 +318,5 @@ do
 done
 
 main
-cleanup
+if [ "$no_cleanup" = false ]; then cleanup; fi
 print_finale

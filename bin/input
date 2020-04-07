@@ -1,5 +1,6 @@
 capture_num_servers() {
     local __resultvar=$1
+    local result=""
     until [ $((result%2)) -ne 0 ]
     do
         printf "${magenta}How many servers will you use (odd numbers only): ${reset}"
@@ -28,21 +29,12 @@ validate_ip() {
     return 0
 }
 
-capture_username() {
-    local result=""
-    printf "${magenta}Enter username (root): ${reset}"
-    local __resultvar=$1
-    read result
-    if [ "$result" == "" ]; then result="root"; fi
-    eval $__resultvar="'$result'"
-}
-
 capture_password() {
     local result=""
     printf "${magenta}Enter password (Password#1): ${reset}"
     local __resultvar=$1
     read -s result
-    if [ "$result" == "" ]; then result="Password#1"; fi
+    if [[ "$result" == "" ]]; then result="Password#1"; fi
     echo ""
     eval $__resultvar="'$result'"
 }
@@ -62,13 +54,53 @@ function valid_ip() {
     return $stat
 }
 
-capture_ntp_server() {
+function join_by { local IFS="$1"; shift; echo "$*"; }
+
+capture_pipeline_review() {
     local result=""
-    printf "${magenta}Enter NTP Server (0.us.pool.ntp.org): ${reset}"
-    local __resultvar=$1
+    printf "${magenta}Review Pipeline Jobs (y/N)? ${reset}"
     read result
-    if [ "$result" == "" ]; then result="0.us.pool.ntp.org"; fi
+
+}
+
+capture_persistence_driver() {
+    local result=""
+    local __resultvar=$1
+    until [[ "$result" == "nfs" ]] || [[ "$result" == "vxflex" ]]
+    do
+        printf "${magenta}Which persistence driver should we use (nfs/vxflex)? ${reset}"
+        read result
+    done
     eval $__resultvar="'$result'"
 }
 
-function join_by { local IFS="$1"; shift; echo "$*"; }
+capture_nfs_server() {
+    local result=""
+    local __resultvar=$1
+    while [[ "$result" == "" ]]
+    do
+        printf "${magenta}NFS Server: ${reset}"
+        read result
+    done
+    eval $__resultvar="'$result'"
+}
+
+capture_nfs_share() {
+    local result=""
+    local __resultvar=$1
+    while [[ "$result" == "" ]]
+    do
+        printf "${magenta}NFS Share: ${reset}"
+        read result
+    done
+    eval $__resultvar="'$result'"
+}
+
+capture_the_data() {
+    local result="" __resultvar=$1 vardefault=$2
+    local __resultvar=$1
+    printf "${magenta}${__resultvar//_/ } (${vardefault}): ${reset}"
+    read result
+    if [[ "$result" == "" ]]; then result="${vardefault}"; fi
+    eval $__resultvar="'$result'"
+}
