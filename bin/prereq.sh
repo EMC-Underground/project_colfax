@@ -101,9 +101,9 @@ main() {
     install_prereqs
 }
 
-branch="dev"
+branch='master'
 install_tags=$1
-[ $2 ] && branch=$2
+[[ $2 ]] && branch=$2
 main
 cleanup
 if [[ " ${install_tags[@]} " =~ " kernel " ]]

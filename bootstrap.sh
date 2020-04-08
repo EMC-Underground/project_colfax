@@ -1,34 +1,35 @@
 #!/bin/bash
 
+branch="master"
 #############################################
 # Load in the config file
 #############################################
-source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/master/bin/config)
+source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/${branch}/bin/config)
 
 #############################################
 # Load in the generate file
 #############################################
-source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/dev/bin/generate)
+source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/${branch}/bin/generate)
 
 #############################################
 # Load in the software check functions
 #############################################
-source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/master/bin/software_checks)
+source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/${branch}/bin/software_checks)
 
 #############################################
 # Load in the vault related functions
 #############################################
-source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/master/bin/vault)
+source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/${branch}/bin/vault)
 
 #############################################
 # Load in the concourse related functions
 #############################################
-source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/master/bin/concourse)
+source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/${branch}/bin/concourse)
 
 #############################################
 # Load in the input related functions
 #############################################
-source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/master/bin/input)
+source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/${branch}/bin/input)
 
 pull_repo() {
     local repo_url=$1 repo_name=`echo $1 | awk -F'/' '{print $NF}' | awk -F'.' '{print $1}'`
