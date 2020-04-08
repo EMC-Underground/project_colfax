@@ -22,14 +22,14 @@ software_pre_reqs() {
                     printf "${red}This machine will reboot after pre-req's are installed\n"
                     printf "${red}Please restart the bootstrap script once complete\n\n"
                 fi
-                bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/${BRANCH}/bin/prereq.sh) "${failed_software[*]}" "${branch}"
+                bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/${BRANCH}/bin/prereq.sh) "${failed_software[*]}" "${BRANCH}"
                 failed_software=()
                 software_pre_reqs
                 ;;
             "n"|"no")
                 printf "${green}This command will run an Ansible Playbook to install\n"
                 printf "all pre-requisite software (inc. Ansible)\n\n${reset}"
-                printf "bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/${BRANCH}/bin/prereq.sh) ${failed_software[*]} ${branch}\n\n"
+                printf "bash <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_colfax/${BRANCH}/bin/prereq.sh) ${failed_software[*]} ${BRANCH}\n\n"
                 exit 0
                 ;;
         esac
