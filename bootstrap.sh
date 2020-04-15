@@ -123,6 +123,7 @@ vault_setup() {
     pull_repo `generate_repo_url "github.com" "EMC-Underground" "vault-consul-docker"`
     build_deploy_vault
     vault_init keys
+    echo $keys
     unseal=`echo $keys | jq -r .unseal_keys_b64[0]`
     roottoken=`echo $keys | jq -r .root_token`
     vault_unseal $unseal
