@@ -142,7 +142,7 @@
   - name: "Install Docker-CE"
     package:
       name: docker-ce
-      state: present
+      state: latest
     tags:
       - docker
 
