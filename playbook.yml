@@ -3,7 +3,7 @@
   connection: local
   become: true
   vars:
-    fly_version: 5.8.0
+    fly_version: 5.8.1
     vault_version: 1.3.2
     docker_compose_version: 1.25.0
 
