@@ -64,6 +64,7 @@
       remote_src: yes
       keep_newer: no
       mode: '0755'
+      validate_certs: no
     tags:
       - fly
 
@@ -79,6 +80,7 @@
       url: "https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64"
       dest: /usr/local/bin/jq
       mode: '0755'
+      validate_certs: no
     tags:
       - jq
 
@@ -96,6 +98,7 @@
       remote_src: yes
       keep_newer: no
       mode: '0755'
+      validate_certs: no
     tags:
       - vault
 
