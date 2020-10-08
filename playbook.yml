@@ -78,7 +78,7 @@
 
   - name: "Installing helm"
     unarchive:
-      src: "https://get.helm.sh/helm-v{{ helm_version }}-{{ ansible_system | lower }}-amd64.tgz"
+      src: "https://get.helm.sh/helm-v{{ helm_version }}-{{ ansible_system | lower }}-amd64.tar.gz"
       dest: /usr/local/bin/
       remote_src: yes
       keep_newer: no
