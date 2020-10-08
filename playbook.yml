@@ -6,6 +6,7 @@
     fly_version: 5.8.1
     vault_version: 1.3.2
     docker_compose_version: 1.25.5
+    helm_version: 3.3.4
 
   tasks:
   - name: "update package manager"
@@ -68,6 +69,24 @@
     tags:
       - fly
 
+  - name: Make sure the helm binary is gone first
+    file:
+      path: /usr/local/bin/helm
+      state: absent
+    tags:
+      - helm
+
+  - name: "Installing helm"
+    unarchive:
+      src: "https://get.helm.sh/helm-v{{ helm_version }}-{{ ansible_system | lower }}-amd64.tgz"
+      dest: /usr/local/bin/
+      remote_src: yes
+      keep_newer: no
+      mode: '0755'
+      validate_certs: no
+    tags:
+      - helm
+      
   - name: Make sure the jq binary is gone first
     file:
       path: /usr/local/bin/jq
