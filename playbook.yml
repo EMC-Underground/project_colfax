@@ -7,6 +7,7 @@
     vault_version: 1.3.2
     docker_compose_version: 1.25.5
     helm_version: 3.3.4
+    k9s_version: 0.22.1
 
   tasks:
   - name: "update package manager"
@@ -90,6 +91,27 @@
       validate_certs: no
     tags:
       - helm
+  
+  - name: Make sure the k9s binary is gone first
+    file:
+      path: /usr/local/bin/k9s
+      state: absent
+    tags:
+      - k9s
+
+  - name: "Installing k9s"
+    unarchive:
+      src: "https://github.com/derailed/k9s/releases/download/v{{ k9s_version }}/k9s_{{ ansible_system | lower }}_x86_64.tar.gz"
+      dest: /usr/local/bin/
+      remote_src: yes
+      keep_newer: no
+      extra_opts:
+      - --add-file
+      - 'k9s'
+      mode: '0755'
+      validate_certs: no
+    tags:
+      - k9s
       
   - name: Make sure the jq binary is gone first
     file:
