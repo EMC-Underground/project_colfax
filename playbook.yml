@@ -101,13 +101,13 @@
 
   - name: "Installing k9s"
     unarchive:
-      src: "https://github.com/derailed/k9s/releases/download/v{{ k9s_version }}/k9s_{{ ansible_system | lower }}_x86_64.tar.gz"
+      src: "https://github.com/derailed/k9s/releases/download/v{{ k9s_version }}/k9s_{{ ansible_system | capitalize }}_x86_64.tar.gz"
       dest: /usr/local/bin/
       remote_src: yes
       keep_newer: no
       extra_opts:
-      - --add-file
-      - 'k9s'
+      - "--add-file"
+      - "k9s"
       mode: '0755'
       validate_certs: no
     tags:
