@@ -105,10 +105,6 @@
       dest: /usr/local/bin/
       remote_src: yes
       keep_newer: no
-      extra_opts:
-      - --strip=1
-      - --add-file
-      - k9s
       mode: '0755'
       validate_certs: no
     tags:
