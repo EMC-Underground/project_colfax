@@ -98,15 +98,22 @@
       state: absent
     tags:
       - k9s
-
-  - name: "Installing k9s"
-    unarchive:
-      src: "https://github.com/derailed/k9s/releases/download/v{{ k9s_version }}/k9s_{{ ansible_system | capitalize }}_x86_64.tar.gz"
-      dest: /usr/local/bin/
-      remote_src: yes
-      keep_newer: no
+      
+  - name: "Download lastest stable version of k9s"
+    get_url:
+      url: "https://github.com/derailed/k9s/releases/download/v{{ k9s_version }}/k9s_{{ ansible_system | capitalize }}_x86_64.tar.gz"
+      dest: /tmp/k9s.tar.gz
       mode: '0755'
       validate_certs: no
+    tags:
+      - k9s
+      
+  - name: "Installing k9s"
+    unarchive:
+      src: /tmp/k9s.tar.gz
+      dest: /usr/local/bin/
+      keep_newer: no
+      mode: '0755'
     tags:
       - k9s
       
