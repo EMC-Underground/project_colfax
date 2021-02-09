@@ -135,6 +135,7 @@ vault_setup() {
     vault_vxflex_secrets
     vault_nfs_secrets
     create_vault_secret "concourse/main/build/" "persistence_driver" "$persistence_driver"
+    create_vault_secret "concourse/main/build/" "temp_location" "$temp_location"
     create_vault_secret "concourse/main/build/" "swarm_tags" "swarm,${persistence_driver}"
     create_vault_secret "concourse/main/build/" "password" $password
     create_vault_secret "concourse/main/build/" "user_name" $user_name
