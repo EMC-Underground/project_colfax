@@ -22,3 +22,4 @@ server_list=()
 ssh_repos=1
 no_cleanup=false
 ssh_key=~/.ssh/id_rsa
+temp_location=/tmp
