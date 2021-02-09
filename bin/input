@@ -46,6 +46,7 @@ capture_temp_location() {
     read -s result
     if [[ "$result" == "" ]]; then result="/tmp"; fi
     echo ""
+    mkdir -p $result > /dev/null 2>&1
     eval $__resultvar="'$result'"
 }
 
