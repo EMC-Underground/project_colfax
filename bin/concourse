@@ -1,13 +1,13 @@
 generate_keys() {
     printf "${cyan}Generating Concourse Keys.... "
-    bash /tmp/concourse-docker/keys/generate > /dev/null 2>&1
+    bash ${temp_location}/concourse-docker/keys/generate > /dev/null 2>&1
     success
 }
 
 deploy_concourse() {
     printf "${cyan}Deploying Concourse.... "
     export STORAGE_DRIVER=overlay
-    cd /tmp/concourse-docker
+    cd ${temp_location}/concourse-docker
     docker-compose up -d > /dev/null 2>&1
     success
     cd - > /dev/null 2>&1
@@ -47,8 +47,8 @@ pipeline_build_out() {
             job="${job}
       - put: timestamp"
         fi
-        echo -e "${resource}\n$(cat /tmp/pipeline.yml)" > /tmp/pipeline.yml
-        echo -e "${job}\n" >> /tmp/pipeline.yml
+        echo -e "${resource}\n$(cat ${temp_location}/pipeline.yml)" > ${temp_location}/pipeline.yml
+        echo -e "${job}\n" >> ${temp_location}/pipeline.yml
     done
     }
 
@@ -62,7 +62,7 @@ add_job() {
 build_pipeline() {
     jobs=()
     printf "${cyan}Creating pipeline definition.... ${reset}"
-    echo -e "jobs:" > /tmp/pipeline.yml
+    echo -e "jobs:" > ${temp_location}/pipeline.yml
     read_config
     pipeline_build_out
     echo -e "  - name: timestamp
@@ -70,10 +70,10 @@ build_pipeline() {
     source:
       location: America/Los_Angeles
       start: 12:00 AM
-      stop: 12:00 AM\n$(cat /tmp/pipeline.yml)" > /tmp/pipeline.yml
-    echo -e "resources:\n$(cat /tmp/pipeline.yml)" > /tmp/pipeline.yml
-    echo -e "---\n$(cat /tmp/pipeline.yml)" > /tmp/pipeline.yml
-    [ -f /tmp/pipeline.yml ]
+      stop: 12:00 AM\n$(cat ${temp_location}/pipeline.yml)" > ${temp_location}/pipeline.yml
+    echo -e "resources:\n$(cat ${temp_location}/pipeline.yml)" > ${temp_location}/pipeline.yml
+    echo -e "---\n$(cat ${temp_location}/pipeline.yml)" > ${temp_location}/pipeline.yml
+    [ -f ${temp_location}/pipeline.yml ]
     success
 }
 
@@ -127,7 +127,7 @@ fly_sync() {
 
 set_swarm_pipeline() {
     printf "${cyan}Creating build pipeline.... ${reset}"
-    fly --target main set-pipeline -p build -c /tmp/pipeline.yml -n > /dev/null
+    fly --target main set-pipeline -p build -c ${temp_location}/pipeline.yml -n > /dev/null
     success
     printf "${cyan}Unpausing the build pipeline.... ${reset}"
     fly --target main unpause-pipeline -p build > /dev/null

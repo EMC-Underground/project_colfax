@@ -1,6 +1,6 @@
 build_deploy_vault() {
     printf "${cyan}Deploying Vault.... "
-    cd /tmp/vault-consul-docker
+    cd ${temp_location}/vault-consul-docker
     docker-compose up -d --build > /dev/null 2>&1
     success
     cd - > /dev/null 2>&1
@@ -74,8 +74,8 @@ vault_create_policy() {
     printf "${cyan}Create vault policy.... ${reset}"
     echo 'path "concourse/*" {
   policy = "read"
-}' > /tmp/concourse-policy.hcl
-    vault policy write -address=http://localhost:8200 concourse /tmp/concourse-policy.hcl > /dev/null 2>&1
+}' > ${temp_location}/concourse-policy.hcl
+    vault policy write -address=http://localhost:8200 concourse ${temp_location}/concourse-policy.hcl > /dev/null 2>&1
     success
 }
 

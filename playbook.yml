@@ -91,32 +91,32 @@
       validate_certs: no
     tags:
       - helm
-  
+
   - name: Make sure the k9s binary is gone first
     file:
       path: /usr/local/bin/k9s
       state: absent
     tags:
       - k9s
-      
+
   - name: "Download lastest stable version of k9s"
     get_url:
       url: "https://github.com/derailed/k9s/releases/download/v{{ k9s_version }}/k9s_{{ ansible_system | capitalize }}_x86_64.tar.gz"
-      dest: /tmp/k9s.tar.gz
+      dest: "{{ temp_location }}/k9s.tar.gz"
       mode: '0755'
       validate_certs: no
     tags:
       - k9s
-      
+
   - name: "Installing k9s"
     unarchive:
-      src: /tmp/k9s.tar.gz
+      src: "{{ temp_location }}/k9s.tar.gz"
       dest: /usr/local/bin/
       keep_newer: no
       mode: '0755'
     tags:
       - k9s
-      
+
   - name: Make sure the jq binary is gone first
     file:
       path: /usr/local/bin/jq

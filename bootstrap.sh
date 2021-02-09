@@ -34,11 +34,11 @@ source <(curl -fsSL https://raw.githubusercontent.com/EMC-Underground/project_co
 pull_repo() {
     local repo_url=$1 repo_name=`echo $1 | awk -F'/' '{print $NF}' | awk -F'.' '{print $1}'`
     printf "${cyan}Cloning ${repo_name} repo.... "
-    if [ -d "/tmp/${repo_name}" ]
+    if [ -d "${temp_location}/${repo_name}" ]
     then
-        rm /tmp/$repo_name > /dev/null 2>&1
+        rm ${temp_location}/$repo_name > /dev/null 2>&1
     fi
-    git clone $repo_url /tmp/$repo_name > /dev/null 2>&1
+    git clone $repo_url ${temp_location}/$repo_name > /dev/null 2>&1
     success
 }
 
@@ -59,11 +59,11 @@ destroy() {
 
 cleanup() {
     printf "${cyan}Cleaning up files and folders.... "
-    [ -d "/tmp/vault-consul-docker" ] && sudo rm -Rf /tmp/vault-consul-docker > /dev/null 2>&1
-    [ -d "/tmp/concourse-docker" ] && sudo rm -Rf /tmp/concourse-docker > /dev/null 2>&1
-    [ -f "/tmp/concourse-policy.hcl" ] && sudo rm /tmp/concourse-policy.hcl > /dev/null 2>&1
-    [ -f "/tmp/pipeline.yml" ] && sudo rm /tmp/pipeline.yml > /dev/null 2>&1
-    [ -f "/tmp/vars.yml" ] && sudo rm /tmp/vars.yml > /dev/null 2>&1
+    [ -d "${temp_location}/vault-consul-docker" ] && sudo rm -Rf ${temp_location}/vault-consul-docker > /dev/null 2>&1
+    [ -d "${temp_location}/concourse-docker" ] && sudo rm -Rf ${temp_location}/concourse-docker > /dev/null 2>&1
+    [ -f "${temp_location}/concourse-policy.hcl" ] && sudo rm ${temp_location}/concourse-policy.hcl > /dev/null 2>&1
+    [ -f "${temp_location}/pipeline.yml" ] && sudo rm ${temp_location}/pipeline.yml > /dev/null 2>&1
+    [ -f "${temp_location}/vars.yml" ] && sudo rm ${temp_location}/vars.yml > /dev/null 2>&1
     print_check
 }
 
@@ -83,6 +83,7 @@ capture_data() {
     [ ${#server_list[@]} -eq 0 ] && capture_num_servers num_servers
     [ ${#server_list[@]} -eq 0 ] && input_server_ips server_list $num_servers
     [ -z ${password+x} ] && capture_password password
+    [ -z ${temp_location+x} ] && capture_temp_location temp_location
     capture_generic_data
     [[ "$persistence" == "y" ]] && [ -z ${persistence_driver+x} ] && capture_persistence_driver persistence_driver
     [[ "$persistence_driver" == "nfs" ]] && [ -z ${nfs_server+x} ] && capture_nfs_server nfs_server

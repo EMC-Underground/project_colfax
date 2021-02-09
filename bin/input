@@ -39,6 +39,16 @@ capture_password() {
     eval $__resultvar="'$result'"
 }
 
+capture_temp_location() {
+    local result=""
+    printf "${magenta}Enter location to store temporary working files (/tmp): ${reset}"
+    local __resultvar=$1
+    read -s result
+    if [[ "$result" == "" ]]; then result="/tmp"; fi
+    echo ""
+    eval $__resultvar="'$result'"
+}
+
 function valid_ip() {
     local  ip=$1
     local  stat=1
