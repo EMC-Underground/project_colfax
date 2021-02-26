@@ -6,8 +6,8 @@
     fly_version: 5.8.1
     vault_version: 1.3.2
     docker_compose_version: 1.25.5
-    helm_version: 3.3.4
-    k9s_version: 0.22.1
+    helm_version: 3.5.2
+    k9s_version: 0.24.2
 
   tasks:
   - name: "update package manager"
